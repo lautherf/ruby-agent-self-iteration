@@ -42,6 +42,33 @@ class MemoryLoopSpec < Minitest::Test
     end
   end
 
+  def test_auto_record_collapses_multiline_task_to_single_line_turn
+    build_memory do |memory|
+      hub = RubyAgent::DocHub.new
+      agent = RubyAgent::AgentLoop.new(hub: hub, llm: RubyAgent::MockLLM.new(['Final Answer: 完成']), memory: memory)
+
+      agent.run("第一行\n第二行\n第三行")
+
+      turn = memory.load!.turns.first
+      refute_nil turn, '多行任务也必须能写入记忆'
+      refute_includes turn[:note], "\n", '注释契约禁止换行：自动沉淀必须压平'
+      assert_includes turn[:note], '第一行'
+      assert RubyVM::InstructionSequence.compile(File.read(memory.path))
+    end
+  end
+
+  def test_remember_tool_accepts_tags_array
+    build_memory do |memory|
+      hub = RubyAgent::DocHub.new
+      agent = RubyAgent::AgentLoop.new(hub: hub, llm: RubyAgent::MockLLM.new(['Final Answer: ok']), memory: memory)
+
+      agent.invoke_tool('remember', { 'who' => 'user', 'note' => '风格偏好', 'tags' => ['style', 'pref'] })
+
+      turn = memory.load!.turns.first
+      assert_equal 'style,pref', turn[:tags], '数组 tags 应归一化为逗号分隔字符串'
+    end
+  end
+
   def test_read_memory_recalls_context
     build_memory do |memory|
       hub = RubyAgent::DocHub.new

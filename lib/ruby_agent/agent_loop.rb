@@ -211,20 +211,23 @@ PROMPT
 
     def parse_response(text)
       text = text.to_s
+      # Action 优先于 Final：真实模型常把 Action + Final Answer 塞进同一条回复，
+      # 若先匹配 Final 会让工具一个都没执行（测试抓到的坑）。
+      if (action = text[ACTION_RE, 1]&.strip)
+        return {
+          type: :action,
+          thought: text[THOUGHT_RE, 1]&.strip,
+          action: action,
+          action_input: parse_input(text[ACTION_INPUT_RE, 1]&.strip)
+        }
+      end
+
       if (m = text.match(FINAL_RE))
         return { type: :final, answer: m[1].strip }
       end
 
-      action = text[ACTION_RE, 1]&.strip
       # 没写 Action 的普通回复，直接视为最终答案，避免空转
-      return { type: :final, answer: text.strip } if action.nil?
-
-      {
-        type: :action,
-        thought: text[THOUGHT_RE, 1]&.strip,
-        action: action,
-        action_input: parse_input(text[ACTION_INPUT_RE, 1]&.strip)
-      }
+      { type: :final, answer: text.strip }
     end
 
     def parse_input(raw)
@@ -373,7 +376,7 @@ PROMPT
         who = (input['who'] || input[:who] || 'ra').to_s
         note = (input['note'] || input[:note]).to_s.strip
         raise '记忆内容不能为空' if note.empty?
-        tags = (input['tags'] || input[:tags]).to_s.strip
+        tags = normalize_tags(input['tags'] || input[:tags])
         id = @memory.add_turn(who: who, note: note, tags: tags)
         raise '记忆未落盘' unless id
         record = { id: id, who: who, note: note, tags: tags }
@@ -394,6 +397,7 @@ PROMPT
     # run 结束后自动沉淀一条本次对话（记忆即代码：任务 → ra 的答复）
     def record_active_turn(task)
       note = "#{task} → #{@state.answer || @state.error || '未完成'}"
+      note = note.gsub(/\s+/, ' ').strip            # 注释契约禁换行：压平后再写
       @memory.add_turn(who: 'ra', note: note[0, 500], tags: 'auto')
     rescue StandardError
       nil
@@ -407,7 +411,7 @@ PROMPT
         lesson = (input['lesson'] || input[:lesson]).to_s.strip
         raise '学习内容不能为空' if lesson.empty?
 
-        tags = (input['tags'] || input[:tags]).to_s.strip
+        tags = normalize_tags(input['tags'] || input[:tags])
         id = @knowledge.add(lesson, tags: tags)
         raise '经验沉淀失败' unless id
 
@@ -416,6 +420,12 @@ PROMPT
         emit(:learn, **record)
         "已沉淀经验 #{id}"
       end
+    end
+
+    # 数组 tags（真实模型常直接给数组）归一化为逗号分隔字符串
+    def normalize_tags(value)
+      value = value.join(',') if value.is_a?(Array)
+      value.to_s.strip
     end
 
     def emit(type, payload = {})

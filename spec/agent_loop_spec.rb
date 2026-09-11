@@ -172,6 +172,19 @@ class AgentLoopSpec < Minitest::Test
     assert_includes system, 'verify'
   end
 
+  def test_response_with_crammed_actions_and_final_prefers_action
+    got = []
+    agent = build_loop([
+      "Thought: 收集\nAction: echo\nAction Input: {\"msg\":\"hi\"}\nFinal Answer: done",
+      'Final Answer: done'
+    ])
+    agent.register_tool('echo') { |input| got << input; 'echoed' }
+
+    assert quietly { agent.run('t') }
+
+    assert_equal [{ 'msg' => 'hi' }], got, 'Action 必须优先，不得被尾部的 Final Answer 短路'
+  end
+
   def test_action_input_accepts_single_line_markdown_fence
     got = []
     agent = build_loop([

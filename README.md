@@ -28,7 +28,7 @@ rake ruby_agent:test:verbose
 
 ## 当前状态（2026-09-11）
 
-Sprint 7 交付完成（**记忆即代码**）：对话记忆 = Ruby 存根方法 + `# @doc` 契约，自动沉淀 + remember 显式记忆 + read_memory 召回 + 每轮折叠成经验。**17 个 spec / 145 runs / 441 assertions 全绿**
+Sprint 7 交付完成（**记忆即代码**）：对话记忆 = Ruby 存根方法 + `# @doc` 契约，自动沉淀 + remember 显式记忆 + read_memory 召回 + 每轮折叠成经验。**17 个 spec / 148 runs / 450 assertions 全绿**，真模型跨会话记忆实测通过。
 （成功标准 1–6 全部闭环；代码改坏了自动回滚；ra 身份契约自明；记忆可编译可遗忘）：
 > 基线：Sprint 5 终点 100 runs / 264 assertions → sprint6 119 → 真实模型适配 126 → 内化四则 130 → 记忆 145 runs。
 
@@ -70,7 +70,8 @@ ruby-agent-self-iteration/
 │   ├── run_agnes.rb              # 真实模型（Agnes/OpenAI 兼容）端到端自改闭环
 │   ├── ask_ra.rb                 # 真实模型问 ra：你是谁（身份契约自明）
 │   ├── internalize_math.rb       # 真实模型让 ra 把小学数学内化进自己
-│   └── memory_demo.rb            # 离线演示「记忆即代码」：对话=可编译的 Ruby 文件
+│   ├── memory_demo.rb            # 离线演示「记忆即代码」：对话=可编译的 Ruby 文件
+│   └── test_memory.rb            # 真模型跨会话记忆测试：A 会话记住，B 会话 read_memory 回忆
 ├── plugins/
 │   └── ra.rb                     # ra 身份契约：我是谁 / 我学过什么 / 我不能做什么
 └── lib/
