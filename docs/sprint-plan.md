@@ -125,14 +125,43 @@ end
 
 ---
 
-## Sprint 2：DocHub 核心（第 3 周）
+## Sprint 2：DocHub 多版本并行（第 3 周）✅ 已完成 2026-09-11
 
 ### 目标
 - 实现插件注册表
 - 支持按名寻址
 - 支持多版本并行
 
-### 已落地（v0.1 · 单版本读写分离）
+### 已落地（v0.2 · 多版本并行）
+
+**接口**：
+```ruby
+hub.register(plugin_v1)                 # 版本 '1.0'
+hub.register(plugin_v2)                 # 版本 '2.0'，与 v1 并存
+hub.get('my_plugin')                    # => 当前（最新）版本
+hub.get('my_plugin', version: '2.0')    # => plugin_v2
+hub.mount('my_plugin', version: '1.0')  # 挂载指定版本
+hub.mount('my_plugin')                  # 归位到最新版本
+```
+
+**对应测试**：`spec/doc_hub_versions_spec.rb`（11 用例，全绿）
+
+| 交付物 | 文件 | 状态 |
+|--------|------|------|
+| 多版本存储结构（Hash-of-Hash） | `lib/ruby_agent/doc_hub.rb` | ✅ |
+| 版本号比较（语义化版本数值排序） | `lib/ruby_agent/doc_plugin.rb` | ✅ |
+| `register` / `get` / `mount` / `registry_for` / `unmount` | `lib/ruby_agent/doc_hub.rb` | ✅ |
+| 旧接口向后兼容（`mount(plugin)` / `for_llm` / `teach` / `watch_all`） | `lib/ruby_agent/doc_hub.rb` | ✅ |
+| 回归测试（11 用例，覆盖并行/切换/归位/未知版本 nil） | `spec/doc_hub_versions_spec.rb` | ✅ 全绿 |
+
+**测试结果**：
+```
+doc_hub_versions_spec.rb: 11 runs, 28 assertions, 0 failures
+```
+
+### 新增文件
+- `lib/ruby_agent/doc_hub.rb` ✅ 已落地（单版本 → 多版本演进）
+- `spec/doc_hub_versions_spec.rb` ✅ 已落地（11 用例）
 
 实现接口：`mount` / `unmount` / `[]` / `for_llm`（读，汇总全部插件）/ `teach`（写，定向到某插件）/ `watch_all`。
 对应测试见 `spec/doc_hub_spec.rb`（minitest，5 用例）：

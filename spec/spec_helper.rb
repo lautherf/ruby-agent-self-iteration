@@ -16,7 +16,7 @@ module PluginFixture
     end
   RUBY
 
-  def with_plugin_file(source = DEFAULT_SOURCE)
+  def with_plugin_file(source = DEFAULT_SOURCE, version: nil)
     dir = Dir.mktmpdir('ruby-agent-spec')
     path = File.join(dir, 'plugin_under_test.rb')
     File.write(path, source)

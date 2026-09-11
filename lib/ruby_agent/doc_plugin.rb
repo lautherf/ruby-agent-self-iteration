@@ -9,12 +9,28 @@ module RubyAgent
   #   - 缺口 1 修复：teach 入口统一 method.to_s，杜绝符号键/字符串键分裂。
   #   - 缺口 3 修复：合并时保留旧键（merge 语义），不再整体覆盖。
   class DocPlugin
-    attr_reader :name, :path, :registry
+    attr_reader :name, :path, :registry, :version
 
-    def initialize(name, path)
+    def initialize(name, path, version: nil)
       @name = name.to_s
       @path = path
       @registry = {}
+      @version = version.to_s if version
+    end
+
+    # 版本号按数值分段比较：'1.0' < '1.0.1' < '10.0'（非字典序）
+    def self.compare_versions(a, b)
+      pa = (a.to_s || '0').split('.').map(&:to_i)
+      pb = (b.to_s || '0').split('.').map(&:to_i)
+      max_len = [pa.length, pb.length].max
+      while pa.length < max_len; pa << 0; end
+      while pb.length < max_len; pb << 0; end
+      pa <=> pb
+    end
+
+    # 内部：将版本号字符串拆分为整数数组，供 sort_by 使用
+    def self._split_version(v)
+      (v.to_s || '0').split('.').map(&:to_i)
     end
 
     # 加载：解析到局部变量，成功才替换（失败关闭，保留旧 registry）
