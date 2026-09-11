@@ -28,7 +28,7 @@ rake ruby_agent:test:verbose
 
 ## 当前状态（2026-09-11）
 
-Sprint 7 交付完成（**记忆即代码**）：对话记忆 = Ruby 存根方法 + `# @doc` 契约，自动沉淀 + remember 显式记忆 + read_memory 召回 + 每轮折叠成经验。**17 个 spec / 148 runs / 450 assertions 全绿**，真模型跨会话记忆实测通过。
+Sprint 7 交付完成（**记忆即代码**）：记忆是可执行的真代码——每条记忆 = 一个 `def`，**方法体就是记忆内容**，`# @doc` 只放元数据（who/since/tags），求值 memory.rb 就能读回整份记忆（磁盘零重复、可编译、可回滚、可 git diff、可遗忘）。自动沉淀 + remember 显式记忆 + read_memory 召回 + 每轮折叠成经验。引擎层兼容真模型"一条回复塞多个 Action"的毛病（全部按序执行再认 Final）。**17 个 spec / 151 runs / 472 assertions 全绿**，真模型跨会话记忆实测通过。
 （成功标准 1–6 全部闭环；代码改坏了自动回滚；ra 身份契约自明；记忆可编译可遗忘）：
 > 基线：Sprint 5 终点 100 runs / 264 assertions → sprint6 119 → 真实模型适配 126 → 内化四则 130 → 记忆 145 runs。
 

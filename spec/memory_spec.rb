@@ -25,16 +25,42 @@ class MemorySpec < Minitest::Test
     end
   end
 
-  def test_add_turn_appends_doc_contract_stub
+  def test_add_turn_writes_note_as_real_method_body
     with_memory do |mem, path|
       id = mem.add_turn(who: 'user', note: '帮我把小学数学内化进你自己', tags: 'math')
 
       assert_equal 'turn_001', id
       src = File.read(path)
       assert_includes src, '# @doc who: user'
-      assert_includes src, '# @doc note: 帮我把小学数学内化进你自己'
-      assert_includes src, 'def turn_001'
+      assert_includes src, "# @doc since:"
+      assert_includes src, '# @doc tags: math'
+      refute_includes src, '# @doc note:', 'note 是方法体，不得在注释里重复一份'
+      assert_includes src, "def turn_001\n  \"帮我把小学数学内化进你自己\"\nend"
       assert RubyVM::InstructionSequence.compile(src)
+    end
+  end
+
+  def test_memory_file_is_evaluable_and_returns_payload
+    with_memory do |mem, path|
+      mem.add_turn(who: 'user', note: '项目名是 weixin', tags: 'math')
+      mem.add_lesson('折叠了 3 条旧对话')
+
+      bodies = RubyAgent::Memory.eval_bodies(path)
+      assert_equal '项目名是 weixin', bodies['turn_001'], '记忆=代码：求值方法体就能读回记忆'
+      assert_equal '折叠了 3 条旧对话', bodies['lesson_001']
+    end
+  end
+
+  def test_multiline_note_round_trips_safely
+    with_memory do |mem, path|
+      id = mem.add_turn(who: 'ra', note: "第一步：apply_code\n第二步：验证")
+
+      assert_equal 'turn_001', id
+      assert_includes mem.turns.first[:note], "\n", '多行内容也该原样读回'
+      assert RubyVM::InstructionSequence.compile(File.read(path))
+      src = File.read(path)
+      refute_includes src, "# @doc note:", 'note 不应进注释层'
+      assert_equal 1, src.lines.count { |l| l.include?('第一步') }, 'inspect 转义后仍是一行物理代码'
     end
   end
 
@@ -61,6 +87,11 @@ class MemorySpec < Minitest::Test
                    mem.recall(limit: 10).map { |t| t[:note] }, '最新在前'
       assert_equal 2, mem.recall(query: '数学', limit: 10).size
       assert_equal 1, mem.recall(query: '聊聊 Ruby', limit: 10).size
+
+      multi = mem.recall(query: '数学 Ruby', limit: 10)
+      assert_equal 3, multi.size, '空格分词：命中任意词即召回'
+      assert_equal ['数学已经内化', '聊聊 Ruby'],
+                   mem.recall(query: '数学 聊聊', limit: 2).map { |t| t[:note] }, '多词查询按最近排序'
     end
   end
 

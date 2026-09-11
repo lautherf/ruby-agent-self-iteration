@@ -28,6 +28,31 @@ class MemoryLoopSpec < Minitest::Test
     end
   end
 
+  def test_run_executes_every_action_crammed_into_one_reply_then_final
+    build_memory do |memory|
+      hub = RubyAgent::DocHub.new
+      crammed = <<~REPLY
+        Thought: 一次性把三件事写进记忆。
+        Action: remember
+        Action Input: {"who":"user","note":"项目名是 weixin","tags":["a"]}
+        Action: remember
+        Action Input: {"who":"user","note":"用户喜欢蓝色","tags":["b"]}
+        Action: remember
+        Action Input: {"who":"user","note":"口头禅是稳字当头","tags":["c"]}
+        Final Answer: 三条都已写入
+      REPLY
+      agent = RubyAgent::AgentLoop.new(hub: hub, llm: RubyAgent::MockLLM.new([crammed]), memory: memory)
+
+      answer = agent.run('记住三件事')
+
+      assert_equal '三条都已写入', answer, '执行完全部 Action 后要兜住 Final Answer'
+      notes = memory.load!.turns.map { |t| t[:note] }
+      assert_includes notes, '项目名是 weixin'
+      assert_includes notes, '用户喜欢蓝色'
+      assert_includes notes, '口头禅是稳字当头', '一条回复里塞的多个 Action 必须全部执行，不能只跑第一个'
+    end
+  end
+
   def test_auto_records_this_conversation_after_run
     build_memory do |memory|
       hub = RubyAgent::DocHub.new
@@ -51,7 +76,7 @@ class MemoryLoopSpec < Minitest::Test
 
       turn = memory.load!.turns.first
       refute_nil turn, '多行任务也必须能写入记忆'
-      refute_includes turn[:note], "\n", '注释契约禁止换行：自动沉淀必须压平'
+      refute_includes turn[:note], "\n", '自动沉淀把多行任务压平成单行，便于召回'
       assert_includes turn[:note], '第一行'
       assert RubyVM::InstructionSequence.compile(File.read(memory.path))
     end

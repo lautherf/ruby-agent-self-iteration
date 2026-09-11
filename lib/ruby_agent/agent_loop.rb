@@ -125,16 +125,28 @@ PROMPT
           return @state.answer
         end
 
-        step = Step.new(index: index, thought: parsed[:thought], raw: response,
-                        action: parsed[:action], action_input: parsed[:action_input])
-        emit(:tool_call, tool: step.action, input: step.action_input, index: index)
+        # 一条回复可能塞了多个 Action（真模型老毛病）：全部按序执行，最后认 Final。
+        actions = parsed[:actions] || [{ action: parsed[:action], input: parsed[:action_input] }]
+        actions.each do |a|
+          step = Step.new(index: index, thought: parsed[:thought], raw: response,
+                          action: a[:action], action_input: a[:input])
+          emit(:tool_call, tool: step.action, input: step.action_input, index: index)
 
-        outcome = execute_tool(step.action, step.action_input)
-        step.observation = outcome[:ok] ? outcome[:value].to_s : "ERROR: #{outcome[:error]}"
-        @state.steps << step
-        emit(:observation, tool: step.action, ok: outcome[:ok], observation: step.observation, index: index)
+          outcome = execute_tool(step.action, step.action_input)
+          step.observation = outcome[:ok] ? outcome[:value].to_s : "ERROR: #{outcome[:error]}"
+          @state.steps << step
+          emit(:observation, tool: step.action, ok: outcome[:ok], observation: step.observation, index: index)
 
-        index += 1
+          index += 1
+          break if index >= @max_steps
+        end
+
+        if parsed[:final]
+          @state.answer = parsed[:final]
+          @state.status = :done
+          emit(:finish, answer: @state.answer)
+          return @state.answer
+        end
       end
 
       @state.status = :max_steps
@@ -213,21 +225,55 @@ PROMPT
       text = text.to_s
       # Action 优先于 Final：真实模型常把 Action + Final Answer 塞进同一条回复，
       # 若先匹配 Final 会让工具一个都没执行（测试抓到的坑）。
-      if (action = text[ACTION_RE, 1]&.strip)
+      # 更进一步：同一条回复里塞了 N 个 Action（真模型老毛病），全部照单执行，最后认 Final。
+      actions = scan_actions(text)
+      final = text.match(FINAL_RE)&.then { |m| m[1].strip }
+
+      unless actions.empty?
+        first = actions.first
         return {
           type: :action,
           thought: text[THOUGHT_RE, 1]&.strip,
-          action: action,
-          action_input: parse_input(text[ACTION_INPUT_RE, 1]&.strip)
+          action: first[:action],        # 兼容形态：只暴露第一个
+          action_input: first[:input],
+          actions: actions,               # 主用：这条回复里的全部动作
+          final: final
         }
       end
 
-      if (m = text.match(FINAL_RE))
-        return { type: :final, answer: m[1].strip }
-      end
+      return { type: :final, answer: final } if final && !final.empty?
 
       # 没写 Action 的普通回复，直接视为最终答案，避免空转
       { type: :final, answer: text.strip }
+    end
+
+    # 逐行扫描一条回复里出现的所有 Action 块（Action: X / Action Input: {...}），
+    # Action Input 若跨行则续行收集，交给 parse_input 剥围栏。
+    def scan_actions(text)
+      actions = []
+      lines = text.lines
+      i = 0
+      while i < lines.size
+        if (m = lines[i].match(/\AAction:\s*(.+?)\s*\z/))
+          name = m[1].strip
+          if i + 1 < lines.size && (im = lines[i + 1].match(/\AAction Input:\s*(.*?)\s*\z/))
+            raw = im[1].strip
+            j = i + 2
+            while j < lines.size && !lines[j].match?(/\A(?:Thought|Action|Action Input|Final Answer|Observation)\s*:/)
+              raw << "\n" << lines[j].rstrip
+              j += 1
+            end
+            actions << { action: name, input: parse_input(raw) }
+            i = j
+          else
+            actions << { action: name, input: {} }
+            i += 1
+          end
+        else
+          i += 1
+        end
+      end
+      actions
     end
 
     def parse_input(raw)
