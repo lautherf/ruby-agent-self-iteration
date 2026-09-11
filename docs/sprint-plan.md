@@ -321,12 +321,28 @@ refs.cleaned_up?               # => true
 
 ---
 
-## Sprint 4：Agent Loop 集成（第 5-6 周）
+## Sprint 4：Agent Loop 集成（第 5-6 周）✅ 已完成 2026-09-11
 
 ### 目标
 - 实现基于 DeepSeek API 的 Agent Loop
 - 读写走同一份 registry
 - 验证插件热替换
+
+### 交付物
+
+| 交付物 | 文件 | 状态 |
+|--------|------|------|
+| LLM 抽象基类（`chat` / `chat_stream` / `streaming?`）+ 测试用 MockLLM | `lib/ruby_agent/llm_adapter.rb` | ✅ |
+| ReAct Agent Loop（State / Step / 事件系统 / 内置工具） | `lib/ruby_agent/agent_loop.rb` | ✅ |
+| DeepSeek Adapter（Chat Completions + SSE 流式 + 错误分级 + 重试） | `lib/ruby_agent/deepseek_adapter.rb` | ✅ |
+| Loop / 事件 / 工具调用 / DocHub 集成测试 | `spec/agent_loop_spec.rb` | ✅ 15 用例全绿 |
+| Adapter 接口 / 请求构造 / 流式 / 错误分支测试 | `spec/deepseek_adapter_spec.rb` | ✅ 16 用例全绿（零真实网络请求） |
+
+**实现要点**：
+- `AgentLoop.new(hub:, llm:, max_steps: 8, system_prompt:)`；`#run(task)` 返回 Final Answer；`#register_tool` / `#invoke_tool` / `#on(type)` 链式注册；`#sync!` 热重载并广播 `:synced`。
+- 事件类型：`:start` / `:llm_response` / `:tool_call` / `:observation` / `:finish` / `:max_steps` / `:error` / `:synced`。
+- 工具异常被捕获为 `{ok: false, error: ...}` 并作为 observation 回灌，不中断循环。
+- `DeepSeekAdapter` 的 `transport:` 可注入 → 测试用假 transport 完全离线；4xx/解析失败 → `APIError`，超时/连接失败/5xx → `TransportError`（按 `max_retries` 重试）。
 
 ### 测试驱动（minitest · 示意，接口随实现调整）
 ```ruby
@@ -355,6 +371,8 @@ class AgentLoopSpec < Minitest::Test
   end
 end
 ```
+
+**回归数据**：`rake ruby_agent:test` → 10 spec / 84 runs / 214 assertions / 0 failures / 0 errors / 1 skip（skip 为 zeitwerk 未安装，预期）。
 
 ---
 
@@ -397,9 +415,9 @@ end
 |--------|------|--------|--------|------|
 | 0 | W1 | 项目骨架 + 测试栈 | 环境就绪 | ✅ 完成 |
 | 1 | W2 | Doc 核心层 + DocPlugin（含 3 条回归红测） | 注释可安全读写 | ✅ 完成 |
-| 2 | W3 | DocHub 核心（多版本并行） | 注册表可用 | 🟡 进行中（单版本读写分离已落地） |
-| 3 | W4 | 动态修改 | 可逆修改 | ⬜ 待开始 |
-| 4 | W5-6 | Agent Loop | 端到端运行 | ⬜ 待开始 |
+| 2 | W3 | DocHub 核心（多版本并行） | 注册表可用 | ✅ 完成 |
+| 3 | W4 | 动态修改 + Refinements 作用域 | 可逆修改 | ✅ 完成 |
+| 4 | W5-6 | Agent Loop + LLM Adapter + DeepSeek Adapter | 端到端运行 | ✅ 完成 |
 | 5 | W7 | 知识沉淀 + 闭环验证 | 迭代闭环 | ⬜ 待开始 |
 
 > **范围前移说明**：Sprint 5 原定的"注释解析（`# @doc`）"因参考 Demo 暴露三个缺口，
@@ -433,9 +451,9 @@ end
 
 ## 下一步行动
 
-1. **当前焦点**：Sprint 4 —— Agent Loop 集成（ReAct 循环 / 事件处理 / 工具调用），
-   Sprint 3 动态修改能力（DynamicMethodsModule 方法覆盖+回滚、Refinements 作用域隔离）已全部交付
-2. **每日站会**：检查测试通过率（当前 `rake ruby_agent:test` 全绿：53 runs / 115 assertions，8 个 spec 文件）
+1. **当前焦点**：Sprint 5 —— 知识沉淀与迭代闭环（注释解析已前移交付；本轮聚焦自动 teach 写回 + 端到端闭环验证）。
+   Sprint 4 Agent Loop 集成（ReAct 循环 / 事件系统 / 内置工具 / DeepSeek Adapter）已全部交付。
+2. **每日站会**：检查测试通过率（当前 `rake ruby_agent:test` 全绿：84 runs / 214 assertions，10 个 spec 文件，1 预期 skip）
 3. **Sprint 评审**：每个 Sprint 末演示可运行版本
 4. **持续集成**：push 即触发测试（仓库已 `git init` 并完成首次提交 `1d59620`）
 5. **测试纪律**：任何声称修复某缺口的用例，都必须能通过一次变异验证把它弄红

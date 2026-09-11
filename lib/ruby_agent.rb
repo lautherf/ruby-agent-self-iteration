@@ -5,6 +5,9 @@ require_relative 'ruby_agent/doc_plugin'
 require_relative 'ruby_agent/doc_hub'
 require_relative 'ruby_agent/dynamic_methods'
 require_relative 'ruby_agent/refinements'
+require_relative 'ruby_agent/llm_adapter'
+require_relative 'ruby_agent/agent_loop'
+require_relative 'ruby_agent/deepseek_adapter'
 
 module RubyAgent
   class << self

@@ -96,25 +96,29 @@
 
 ---
 
-## Sprint 4：Agent Loop 集成（第 5-6 周）
+## Sprint 4：Agent Loop 集成（第 5-6 周）✅ 已完成 2026-09-11
 
 ### 测试驱动开发
 
 #### 阶段 1：基础 Loop
-- [ ] `spec/agent_loop_spec.rb`
-- [ ] 测试 ReAct 循环
-- [ ] 测试事件处理
-- [ ] 测试工具调用
+- [x] `spec/agent_loop_spec.rb`（15 用例，全绿）
+- [x] 测试 ReAct 循环
+- [x] 测试事件处理
+- [x] 测试工具调用
+- [x] 实现 `lib/ruby_agent/llm_adapter.rb`（LLMAdapter 抽象基类 + MockLLM）
+- [x] 实现 `lib/ruby_agent/agent_loop.rb`（AgentLoop + State + Step + 内置工具）
 
 #### 阶段 2：集成 DocHub
-- [ ] 测试插件加载
-- [ ] 测试状态同步
-- [ ] 测试热重载
+- [x] 测试插件加载
+- [x] 测试状态同步
+- [x] 测试热重载
 
 #### 阶段 3：DeepSeek 集成
-- [ ] 测试 API 调用
-- [ ] 测试流式输出
-- [ ] 测试错误处理
+- [x] `spec/deepseek_adapter_spec.rb`（16 用例，全绿；全程假 transport，零真实网络请求）
+- [x] 测试 API 调用（请求构造 / 响应解析）
+- [x] 测试流式输出（SSE 增量回调 / `[DONE]` / 心跳行）
+- [x] 测试错误处理（4xx→APIError / 超时→TransportError / 重试上限）
+- [x] 实现 `lib/ruby_agent/deepseek_adapter.rb`（DeepSeekAdapter + HTTPTransport）
 
 ---
 
@@ -177,7 +181,7 @@
 | W2 | DocPlugin 可用 | 基础插件系统 |
 | W3 | DocHub 可用 | 注册表系统 |
 | W4 | 动态修改可用 | 可逆修改能力 |
-| W6 | Agent Loop 可用 | 端到端运行 |
+| W5-6 | Agent Loop 可用 ✅ | ReAct 循环 + 事件系统 + DeepSeek Adapter（10 spec / 84 runs 全绿） |
 | W7 | 完整迭代闭环 | 生产可用版本 |
 
 ---
@@ -187,5 +191,7 @@
 1. ~~安装依赖~~ → 已核查：无需 bundler（核心组件零运行时依赖）
 2. ~~验证环境~~ → ✅ `rake ruby_agent:test` 全绿（29 runs / 53 assertions）
 3. ~~`git init` 并完成首次提交~~ → ✅ 已完成（commit `1d59620`）
-4. **下一步**：Sprint 3 —— 动态修改能力 + 回滚机制
+4. ~~Sprint 3 —— 动态修改能力 + 回滚机制~~ → ✅ 已完成（`dynamic_methods` + `refinements`，13 用例全绿）
+5. ~~Sprint 4 —— Agent Loop 集成~~ → ✅ 已完成（`llm_adapter` + `agent_loop` + `deepseek_adapter`，31 用例全绿）
+6. **下一步**：Sprint 5 —— 知识沉淀与闭环（注释解析 / 自动 teach / 端到端闭环）
 5. **持续**：每日站会检查进度；任何缺口修复用例须通过一次变异验证方能算数
