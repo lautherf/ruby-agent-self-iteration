@@ -270,42 +270,54 @@ spec/dynamic_methods_spec.rb: 6 runs, 11 assertions, 0 failures
 
 ---
 
-## Sprint 3 阶段 2：Refinements 作用域（待实现）
+## Sprint 3 阶段 2：Refinements 作用域 ✅ 已完成 2026-09-11
 
 ### 目标
-- 实现 DynamicMethodsModule
-- 支持方法级回滚
-- 验证 Refinements 作用域控制
+- 实现 `RubyAgent::Refinements`：词法作用域内的动态方法精化
+- 作用域隔离（全局零污染、多实例互不干扰）
+- 多层嵌套遮蔽（内层精化遮蔽外层，退出后外层语义不变）
+- 清理机制（`cleanup!` 释放精化模块，幂等，可重新激活）
 
-### TDD 示例（minitest）
+### 关键技术结论：`using` 的词法上下文规则
+`Module#using` 的合法性由**词法位置**决定，而非运行时调用栈：
+- ❌ 不允许出现在 `def` 的词法上下文中 → `RuntimeError: Module#using is not permitted in methods`
+- ✅ 允许出现在 `lambda` / `block` / 类体的词法上下文中
+
+因此实现改为：**在类体（非方法）处预捕获 lambda**，lambda 体内执行
+`Class.new do using refinement; class_eval(source, file, line) end`。
+实例方法只负责调用 lambda。该方案无需把精化模块注册为全局常量，
+顶层 / 全局 / 新方法上下文**零泄漏**（已用探针实测验证）。
+
 ```ruby
-# spec/dynamic_methods_spec.rb
-class DynamicMethodsSpec < Minitest::Test
-  def build_klass
-    Class.new do
-      extend RubyAgent::DynamicMethodsModule
-
-      def original_method
-        'original'
-      end
-    end
+SCOPE_EVAL_RUNNER = lambda do |refinement, source, file, line|
+  result = nil
+  Class.new do
+    using refinement
+    result = class_eval(source, file, line)
   end
-
-  def test_override_then_rollback
-    klass = build_klass
-
-    klass.dynamic_method(:original_method) { 'modified' }
-    assert_equal 'modified', klass.new.original_method
-
-    klass.rollback!
-    assert_equal 'original', klass.new.original_method
-  end
+  result
 end
 ```
 
+### 接口
+```ruby
+refs = RubyAgent::Refinements.new
+refs.refine(String, :shout) { upcase }
+
+'hi'.shout                     # => NoMethodError（全局未受影响）
+refs.scope_eval("'hi'.shout")  # => "HI"
+refs.refined?(String, :shout)  # => true
+refs.scope_class("def f = 'hi'.shout")  # => 匿名类，实例可见精化
+refs.cleanup!                  # 释放作用域，幂等
+refs.cleaned_up?               # => true
+```
+
 ### 新增文件
-- `lib/dynamic_methods_module.rb`
-- `spec/dynamic_methods_spec.rb`
+- `lib/ruby_agent/refinements.rb` ✅ 已落地
+- `spec/refinements_spec.rb` ✅ 已落地（7 用例，全绿）
+
+### 测试结果
+`7 runs, 23 assertions, 0 failures, 0 errors`
 
 ---
 
@@ -421,9 +433,9 @@ end
 
 ## 下一步行动
 
-1. **当前焦点**：Sprint 2 —— DocHub 多版本并行（`register` / `get(name, version:)`），
-   为「新旧版本并行验证」补 TDD 用例（现有 `mount` / `[]` 已支持单版本读写分离）
-2. **每日站会**：检查测试通过率（当前 `rake ruby_agent:test` 全绿：29 runs / 53 assertions）
+1. **当前焦点**：Sprint 4 —— Agent Loop 集成（ReAct 循环 / 事件处理 / 工具调用），
+   Sprint 3 动态修改能力（DynamicMethodsModule 方法覆盖+回滚、Refinements 作用域隔离）已全部交付
+2. **每日站会**：检查测试通过率（当前 `rake ruby_agent:test` 全绿：53 runs / 115 assertions，8 个 spec 文件）
 3. **Sprint 评审**：每个 Sprint 末演示可运行版本
 4. **持续集成**：push 即触发测试（仓库已 `git init` 并完成首次提交 `1d59620`）
 5. **测试纪律**：任何声称修复某缺口的用例，都必须能通过一次变异验证把它弄红

@@ -87,10 +87,12 @@
 - [x] 测试类方法回滚
 - [x] 实现 `lib/ruby_agent/dynamic_methods.rb`（DynamicMethodsModule）
 
-#### 阶段 2：Refinements 作用域（待实现）
-- [ ] 测试作用域隔离
-- [ ] 测试多层嵌套
-- [ ] 测试清理机制
+#### 阶段 2：Refinements 作用域
+- [x] `spec/refinements_spec.rb`（7 用例，全绿）
+- [x] 测试作用域隔离
+- [x] 测试多层嵌套
+- [x] 测试清理机制
+- [x] 实现 `lib/ruby_agent/refinements.rb`（Refinements）
 
 ---
 

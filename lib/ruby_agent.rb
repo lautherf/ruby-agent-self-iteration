@@ -4,6 +4,7 @@ require_relative 'ruby_agent/doc'
 require_relative 'ruby_agent/doc_plugin'
 require_relative 'ruby_agent/doc_hub'
 require_relative 'ruby_agent/dynamic_methods'
+require_relative 'ruby_agent/refinements'
 
 module RubyAgent
   class << self

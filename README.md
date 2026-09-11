@@ -106,7 +106,7 @@ ruby-agent-self-iteration/
 | **DocHub** | 插件注册表，支持挂载/卸载/按名寻址/读写分离 |
 | **注释校验器** | 白名单 key + 禁换行 + 长度上限，为 LLM 的写通道独立设闸 |
 | **Zeitwerk** | 可选。插件自动加载与热重载（缺失时核心功能不受影响） |
-| **Refinements** | Ruby 特性，用于控制修改作用域，避免全局污染（规划中） |
+| **Refinements** | 词法作用域内的动态方法精化，作用域外零污染（已落地 `RubyAgent::Refinements`） |
 
 ## 核心原则
 
