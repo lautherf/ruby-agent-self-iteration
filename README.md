@@ -2,6 +2,11 @@
 
 > **项目愿景**：让 LLM Agent 在 Ruby 生态里安全地修改自己，最坏情况只是"这次没生效"，而不是"系统崩了"。
 
+**Agent 名字：ra** —— 循环往复（Repeat Again），持续进化，永不崩盘。
+ra 对自己的"记忆"不是硬编码，而是一份用 `# @doc` 写成的**身份契约**（`plugins/ra.rb`），
+和它认识其他插件共用同一套机制：**一切皆插件，ra 自己也是一个插件**。
+挂上 `RubyAgent.mount_ra!(hub)` 后，ra 能通过 `whoami` / `list_docs` 读到"我是谁、我学过什么、我不能做什么"。
+
 ## 快速开始
 
 ```bash
@@ -23,9 +28,9 @@ rake ruby_agent:test:verbose
 
 ## 当前状态（2026-09-11）
 
-Sprint 6 交付完成，**代码级自修改闭环端到端可运行**。**14 个 spec / 119 runs / 330 assertions 全绿**
-（成功标准 1–6 全部闭环；代码改坏了自动回滚）：
-> 基线：Sprint 5 终点 100 runs / 264 assertions → Sprint 6 新增 19 runs。
+Sprint 6 交付完成，**代码级自修改闭环端到端可运行**。**15 个 spec / 126 runs / 363 assertions 全绿**
+（成功标准 1–6 全部闭环；代码改坏了自动回滚；ra 身份契约自明）：
+> 基线：Sprint 5 终点 100 runs / 264 assertions → 至 ra 自明 119 runs → 真实模型适配 126 runs。
 
 | 层 | 文件 | 职责 |
 |----|------|------|
@@ -34,7 +39,7 @@ Sprint 6 交付完成，**代码级自修改闭环端到端可运行**。**14 �
 | 中枢层 | `lib/ruby_agent/doc_hub.rb` | `mount` / `unmount` / `[]` / `for_llm` / `teach` / `watch_all` |
 | 动态层 | `lib/ruby_agent/dynamic_methods.rb` | 方法覆盖 + 回滚；`lib/ruby_agent/refinements.rb` 词法作用域精化 |
 | 适配层 | `lib/ruby_agent/llm_adapter.rb` | LLM 抽象基类（`chat` / `chat_stream` / `streaming?`）+ 测试用 `MockLLM` |
-| 循环层 | `lib/ruby_agent/agent_loop.rb` | ReAct 循环：`run` / 工具注册 / 事件系统 / 状态同步 |
+| 循环层 | `lib/ruby_agent/agent_loop.rb` | ReAct 循环：`run` / 工具注册（含 `whoami`）/ 事件系统 / 状态同步 |
 | 供应商 | `lib/ruby_agent/deepseek_adapter.rb` | DeepSeek Chat Completions + SSE 流式 + 错误分级与重试 |
 | 沉淀层 | `lib/ruby_agent/knowledge.rb` | 经验仓库：`add` / `lessons` / `load!`（doc 契约持久化，去重 + 原子落盘 + 线程安全） |
 | 闭环层 | `lib/ruby_agent/iteration.rb` | `IterationLoop`：多轮执行 → reflect 沉淀 → 下轮注入 |
@@ -60,8 +65,12 @@ ruby-agent-self-iteration/
 │   └── checklist.md              # 交付检查清单
 ├── examples/
 │   ├── iteration_closed_loop.rb  # 离线闭环演示（知识沉淀，Sprint 5）
-│   └── code_self_modify.rb       # 离线自改演示（代码级回滚闭环，Sprint 6）
-├── lib/
+│   ├── code_self_modify.rb       # 离线自改演示（代码级回滚闭环，Sprint 6）
+│   ├── run_agnes.rb              # 真实模型（Agnes/OpenAI 兼容）端到端自改闭环
+│   └── ask_ra.rb                 # 真实模型问 ra：你是谁（身份契约自明）
+├── plugins/
+│   └── ra.rb                     # ra 身份契约：我是谁 / 我学过什么 / 我不能做什么
+└── lib/
 │   ├── ruby_agent.rb             # 主入口（Zeitwerk 延迟加载）
 │   └── ruby_agent/
 │       ├── doc.rb                # 核心层：注释解析 / 校验 / 原子提交
@@ -90,8 +99,10 @@ ruby-agent-self-iteration/
 │   ├── knowledge_spec.rb         # 沉淀层：增量 / 去重 / 并发 / 原子落盘
 │   ├── iteration_spec.rb         # 闭环层：跨轮注入 / reflect / 自学回收
 │   ├── code_editor_spec.rb       # 代码层：定位 / 替换 / 回滚 / 作用域
-│   └── code_loop_spec.rb         # 代码闭环：apply → verify → 自动回滚 → 重试
-└── plugins/                      # 插件目录（用户自定义）
+│   ├── code_loop_spec.rb         # 代码闭环：apply → verify → 自动回滚 → 重试
+│   └── ra_spec.rb                # ra 自明：身份契约 / mount_ra / whoami
+└── plugins/
+    └── ra.rb                     # ra 身份契约（自我认知的唯一来源）
 ```
 
 ## 核心架构

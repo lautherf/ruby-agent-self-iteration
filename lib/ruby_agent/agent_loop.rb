@@ -34,6 +34,7 @@ PROMPT
     TOOL_HINTS = {
       'list_docs' => '查看全部插件的 @doc 知识，参数：{}',
       'read_docs' => '查看全部插件的 @doc 知识，参数：{}',
+      'whoami' => '向 ra 自己的身份契约提问：我是谁、我学过什么、我不能做什么，参数：{}',
       'read_code' => '读取某个方法的当前源码，参数：{"plugin":"插件名","method":"方法名"}',
       'apply_code' => '把方法体整体替换为新代码，参数：{"plugin":"插件名","method":"方法名","code":"def 方法名(...)\\n新实现\\nend"}。要求 code 定义同名方法，语法错会自动拒绝。',
       'verify' => '在内存作用域真实运行方法并比对期望值，参数：{"plugin":"插件名","method":"方法名","args":[..],"expected":期望值}。验证失败且之前有 apply_code 时，系统会自动回滚该修改。',
@@ -282,6 +283,18 @@ PROMPT
     def register_default_tools
       register_tool('list_docs') { |_input| @hub.for_llm }
       register_tool('read_docs') { |_input| @hub.for_llm }
+      register_tool('whoami') do |_input|
+        ra = @hub.get('ra')
+        if ra
+          identity = ra.registry.map do |name, spec|
+            detail = spec.is_a?(Hash) ? spec.map { |k, v| "#{k}=#{v}" }.join('，') : spec.to_s
+            "- #{name}: #{detail}"
+          end.join("\n")
+          "我是 #{RubyAgent::NAME}（v#{RubyAgent::VERSION}）。#{RubyAgent::MOTTO}\n身份契约：\n#{identity}"
+        else
+          "我是 #{RubyAgent::NAME}（#{RubyAgent::VERSION}）。#{RubyAgent::MOTTO}（身份契约未挂载，可用 RubyAgent.mount_ra!(hub) 让我认识自己）"
+        end
+      end
       register_tool('teach') do |input|
         input = {} if input.nil?
         plugin = input['plugin'] || input[:plugin]
