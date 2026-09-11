@@ -160,6 +160,34 @@ class AgentLoopSpec < Minitest::Test
     end
   end
 
+  def test_system_prompt_exposes_available_tools
+    agent = build_loop(['Final Answer: ok'])
+
+    agent.run('t')
+
+    system = agent.llm.calls.first[:messages].find { |m| m[:role] == 'system' }[:content]
+    assert_includes system, '可用工具'
+    assert_includes system, 'list_docs'
+    assert_includes system, 'apply_code'
+    assert_includes system, 'verify'
+  end
+
+  def test_action_input_accepts_single_line_markdown_fence
+    got = []
+    agent = build_loop([
+      "Action: echo\nAction Input: ```json {\"msg\":\"hi\",\"n\":2}```",
+      'Final Answer: ok'
+    ])
+    agent.register_tool('echo') do |input|
+      got << input
+      'ok'
+    end
+
+    agent.run('t')
+
+    assert_equal({ 'msg' => 'hi', 'n' => 2 }, got.first, '必须剥掉 ```json 围栏再解析')
+  end
+
   def test_sync_reflects_newly_mounted_plugin
     agent = build_loop(['Final Answer: ok'])
 

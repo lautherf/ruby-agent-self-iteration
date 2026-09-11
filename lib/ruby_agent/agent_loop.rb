@@ -20,14 +20,26 @@ module RubyAgent
     ACTION_INPUT_RE = /^Action Input:\s*(.*)$/
     FINAL_RE        = /^Final Answer:\s*(.*)\z/m
 
-    DEFAULT_SYSTEM_PROMPT = <<~PROMPT
-      你是一个可以调用工具的智能体，请严格按 ReAct 格式作答：
-      Thought: 你的思考
-      Action: 工具名
-      Action Input: JSON 格式的参数
-      当你已经可以给出最终答案时，改为：
-      Final Answer: 你的答案
-    PROMPT
+DEFAULT_SYSTEM_PROMPT = <<~PROMPT
+  你是一个可以调用工具的智能体，请严格按 ReAct 格式作答：
+  Thought: 你的思考
+  Action: 工具名
+  Action Input: JSON 格式的参数
+  当你已经可以给出最终答案时，改为：
+  Final Answer: 你的答案
+PROMPT
+
+    # 真实模型（如 Agnes）常因"自认无工具"而拒绝执行；
+    # 注入明确的工具清单 + 调用约定，能显著提高遵循率。
+    TOOL_HINTS = {
+      'list_docs' => '查看全部插件的 @doc 知识，参数：{}',
+      'read_docs' => '查看全部插件的 @doc 知识，参数：{}',
+      'read_code' => '读取某个方法的当前源码，参数：{"plugin":"插件名","method":"方法名"}',
+      'apply_code' => '把方法体整体替换为新代码，参数：{"plugin":"插件名","method":"方法名","code":"def 方法名(...)\\n新实现\\nend"}。要求 code 定义同名方法，语法错会自动拒绝。',
+      'verify' => '在内存作用域真实运行方法并比对期望值，参数：{"plugin":"插件名","method":"方法名","args":[..],"expected":期望值}。验证失败且之前有 apply_code 时，系统会自动回滚该修改。',
+      'teach' => '写回插件方法的 @doc 元数据，参数：{"plugin":"插件名","method":"方法名","role":"..","note":".."}',
+      'learn' => '把经验沉淀进知识仓库，参数：{"lesson":"经验文本","tags":"可选标签"}'
+    }.freeze
 
     # 运行状态快照
     class State
@@ -170,6 +182,10 @@ module RubyAgent
 
     def system_content
       parts = [@system_prompt]
+      tools = @tools.keys.sort.filter_map { |name| TOOL_HINTS[name] && "- #{name}: #{TOOL_HINTS[name]}" }
+      unless tools.empty?
+        parts << "可用工具（必须用 Action 指定工具名，Action Input 必须是 JSON）：\n#{tools.join("\n")}"
+      end
       docs = @hub.for_llm
       unless docs.empty?
         parts << "可用文档插件：\n#{docs.map { |doc| format_doc(doc) }.join("\n")}"
@@ -206,7 +222,9 @@ module RubyAgent
     def parse_input(raw)
       return {} if raw.nil? || raw.empty?
 
-      parsed = JSON.parse(raw)
+      text = raw.to_s.strip
+      text = text.sub(/\A```(?:json)?\s*/i, '').sub(/```\z/, '')   # 兼容推理模型输出 ```json 围栏
+      parsed = JSON.parse(text)
       parsed.is_a?(Hash) ? parsed : { 'value' => parsed }
     rescue JSON::ParserError
       { 'value' => raw }
