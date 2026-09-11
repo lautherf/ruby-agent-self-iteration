@@ -23,9 +23,8 @@ rake ruby_agent:test:verbose
 
 ## 当前状态（2026-09-11）
 
-Sprint 4 交付完成，Agent Loop 端到端可运行。**10 个 spec / 84 runs / 214 assertions 全绿**
-（1 例在未安装 zeitwerk 时自动跳过）：
-> 基线：Sprint 3 终点 53 runs / 115 assertions → Sprint 4 新增 31 runs。
+Sprint 5 交付完成，**迭代闭环端到端可运行**。**12 个 spec / 100 runs / 264 assertions 全绿**（对应成功标准 1–6 全部闭环）：
+> 基线：Sprint 4 终点 84 runs / 214 assertions → Sprint 5 新增 16 runs。
 
 | 层 | 文件 | 职责 |
 |----|------|------|
@@ -34,8 +33,10 @@ Sprint 4 交付完成，Agent Loop 端到端可运行。**10 个 spec / 84 runs 
 | 中枢层 | `lib/ruby_agent/doc_hub.rb` | `mount` / `unmount` / `[]` / `for_llm` / `teach` / `watch_all` |
 | 动态层 | `lib/ruby_agent/dynamic_methods.rb` | 方法覆盖 + 回滚；`lib/ruby_agent/refinements.rb` 词法作用域精化 |
 | 适配层 | `lib/ruby_agent/llm_adapter.rb` | LLM 抽象基类（`chat` / `chat_stream` / `streaming?`）+ 测试用 `MockLLM` |
-| 循环层 | `lib/ruby_agent/agent_loop.rb` | ReAct 循环：`run` / 工具注册 / 事件系统 / 状态同步 |
+| 循环层 | `lib/ruby_agent/agent_loop.rb` | ReAct 循环：`run` / 工具注册（含 `learn`）/ 事件系统 / 状态同步 |
 | 供应商 | `lib/ruby_agent/deepseek_adapter.rb` | DeepSeek Chat Completions + SSE 流式 + 错误分级与重试 |
+| 沉淀层 | `lib/ruby_agent/knowledge.rb` | 经验仓库：`add` / `lessons` / `load!`（doc 契约持久化，去重 + 原子落盘 + 线程安全） |
+| 闭环层 | `lib/ruby_agent/iteration.rb` | `IterationLoop`：多轮执行 → reflect 沉淀 → 下轮注入 |
 
 其中 `spec/regression_gaps_spec.rb` 用三条回归测试固化了参考 Demo 暴露的三个缺口——
 任何一次回退都会立刻变红。缺口的成因与证据见 [doc-demo-review.md](./docs/doc-demo-review.md)。
@@ -55,6 +56,8 @@ ruby-agent-self-iteration/
 │   ├── tdd-workflow.md           # TDD 工作流规范
 │   ├── test-template.md          # 测试模板
 │   └── checklist.md              # 交付检查清单
+├── examples/
+│   └── iteration_closed_loop.rb  # 离线闭环演示（ruby -Ilib examples/iteration_closed_loop.rb）
 ├── lib/
 │   ├── ruby_agent.rb             # 主入口（Zeitwerk 延迟加载）
 │   └── ruby_agent/
@@ -65,7 +68,9 @@ ruby-agent-self-iteration/
 │       ├── refinements.rb        # 词法作用域精化
 │       ├── llm_adapter.rb        # LLM 抽象基类 + MockLLM
 │       ├── agent_loop.rb         # ReAct Agent 循环
-│       └── deepseek_adapter.rb   # DeepSeek 供应商实现
+│       ├── deepseek_adapter.rb   # DeepSeek 供应商实现
+│       ├── knowledge.rb          # 经验仓库：沉淀 / 去重 / 原子落盘
+│       └── iteration.rb          # 迭代闭环：多轮执行 + 沉淀 + 反馈
 ├── spec/
 │   ├── spec_helper.rb            # 测试配置与夹具
 │   ├── ruby_agent_spec.rb        # 入口与组件装配
@@ -77,7 +82,9 @@ ruby-agent-self-iteration/
 │   ├── refinements_spec.rb       # 精化作用域隔离
 │   ├── agent_loop_spec.rb        # Agent Loop：循环 / 事件 / 工具 / 集成
 │   ├── deepseek_adapter_spec.rb  # DeepSeek 适配器：请求 / 流式 / 错误
-│   └── regression_gaps_spec.rb   # 回归：三个缺口
+│   ├── regression_gaps_spec.rb   # 回归：三个缺口
+│   ├── knowledge_spec.rb         # 沉淀层：增量 / 去重 / 并发 / 原子落盘
+│   └── iteration_spec.rb         # 闭环层：跨轮注入 / reflect / 自学回收
 └── plugins/                      # 插件目录（用户自定义）
 ```
 
@@ -126,6 +133,8 @@ ruby-agent-self-iteration/
 | **LLMAdapter** | LLM 读写通道的抽象基类；`MockLLM` 让全链路测试零网络依赖 |
 | **AgentLoop** | ReAct 循环：思考 → 调用工具 → 观察 → 收敛为 Final Answer 或触顶退出 |
 | **DeepSeekAdapter** | 首个真实供应商实现；SSE 流式、错误分级（`APIError` / `TransportError`）与线性退避重试 |
+| **Knowledge** | 经验仓库：Agent 自学 `learn` 的落点；doc 契约持久化、内容去重、原子落盘、线程安全 |
+| **IterationLoop** | 迭代闭环：多轮执行 → reflect 沉淀 → Hub 反馈 → 下一轮从更新后的知识出发 |
 
 ## 核心原则
 
@@ -207,8 +216,38 @@ agent.state.plugins   # => 当前已加载插件
 agent.state.status    # => :done / :max_steps / :error
 ```
 
-内置工具：`list_docs` / `read_docs` / `teach`；`llm:` 可注入任何实现 `chat` / `streaming?` 的适配器。
+内置工具：`list_docs` / `read_docs` / `teach`（注入 `knowledge:` 后额外有 `learn`）；`llm:` 可注入任何实现 `chat` / `streaming?` 的适配器。
 工具抛错会被捕获为 observation 回灌给 LLM，循环不中断。
+
+### 6. 自我迭代闭环（Sprint 5）
+
+```ruby
+require 'ruby_agent'
+require 'tmpdir'
+
+dir = Dir.mktmpdir
+hub = RubyAgent::DocHub.new
+hub.mount(RubyAgent::DocPlugin.new('math', 'plugins/math.rb'))
+knowledge = RubyAgent::Knowledge.new(File.join(dir, 'lessons.rb'))
+
+iteration = RubyAgent::IterationLoop.new(
+  hub: hub,
+  knowledge: knowledge,
+  builder: proc do
+    RubyAgent::AgentLoop.new(hub: hub, llm: RubyAgent::MockLLM.new([
+      "Action: learn\nAction Input: {\"lesson\": \"先看文档再动手\"}",
+      'Final Answer: 完成'
+    ]), knowledge: knowledge)
+  end
+)
+
+iteration.run(%w[任务一 任务二])       # 每轮结束自动沉淀经验
+knowledge.lessons                     # => [{id: "lesson_001", note: "先看文档再动手", ...}]
+# 下一轮 Agent 的 system prompt 已包含上一轮沉淀的经验（闭环 #5 #6）
+```
+
+> 完整可运行演示：`ruby -Ilib examples/iteration_closed_loop.rb`（全离线）。
+> `reflect:` 可注入来定制「如何从本轮状态提炼经验」；缺省回收 Agent 通过 `learn` 工具自学的经验。
 
 ## 迭代规划
 
@@ -223,7 +262,7 @@ agent.state.status    # => :done / :max_steps / :error
 | 2 | W3 | DocHub 核心 | ✅ 完成 |
 | 3 | W4 | 动态修改能力 | ✅ 完成 |
 | 4 | W5-6 | Agent Loop 集成 | ✅ 完成 |
-| 5 | W7 | 知识沉淀与闭环 | ⬜ 待开始 |
+| 5 | W7 | 知识沉淀与闭环 | ✅ 完成 |
 
 ## TDD 实践
 

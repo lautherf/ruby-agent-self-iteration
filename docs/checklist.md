@@ -122,25 +122,25 @@
 
 ---
 
-## Sprint 5：知识沉淀与闭环（第 7 周）
+## Sprint 5：知识沉淀与闭环（第 7 周）✅ 已完成 2026-09-11
 
 ### 测试驱动开发
 
-#### 阶段 1：注释解析
-- [ ] `spec/doc_parser_spec.rb`
-- [ ] 测试 `# @doc` 解析
-- [ ] 测试元数据提取
-- [ ] 测试多行注释
+#### 阶段 1：Knowledge 经验仓库
+- [x] `spec/knowledge_spec.rb`（10 用例，全绿）
+- [x] 测试 `add` 自动 id / 内容去重 / 空值与多行拒写（33 assertions）
+- [x] 测试原子落盘（tmp + rename，无 .tmp 残骸，产物可编译）
+- [x] 测试 8 线程并发零 lost update（磁盘与内存一致）
+- [x] 实现 `lib/ruby_agent/knowledge.rb`（doc 契约持久化经验仓库）
 
-#### 阶段 2：知识写回
-- [ ] 测试保存机制
-- [ ] 测试冲突处理
-- [ ] 测试版本控制
-
-#### 阶段 3：完整闭环
-- [ ] 端到端集成测试
-- [ ] 性能基准测试
-- [ ] 稳定性测试
+#### 阶段 2：Agent 自学会 + 闭环
+- [x] `spec/iteration_spec.rb`（6 用例，17 assertions，全绿）
+- [x] 测试 `learn` 工具（`:learn` 事件 / `state.learned` / 空值拒绝）
+- [x] 测试 IterationLoop：下轮 system prompt 读到上轮经验（闭环 #5 #6）
+- [x] 测试 reflect 注入沉淀 / 缺省 reflect 回收 Agent 自学经验
+- [x] 实现 `lib/ruby_agent/iteration.rb`（IterationLoop 闭环编排）
+- [x] 实现 `lib/ruby_agent/agent_loop.rb` learn 工具 + 事件（`tags` 键加入 `doc.rb` 白名单）
+- [x] 离线闭环演示 `examples/iteration_closed_loop.rb`（`ruby -Ilib examples/iteration_closed_loop.rb`）
 
 ---
 
@@ -182,7 +182,7 @@
 | W3 | DocHub 可用 | 注册表系统 |
 | W4 | 动态修改可用 | 可逆修改能力 |
 | W5-6 | Agent Loop 可用 ✅ | ReAct 循环 + 事件系统 + DeepSeek Adapter（10 spec / 84 runs 全绿） |
-| W7 | 完整迭代闭环 | 生产可用版本 |
+| W7 | 完整迭代闭环 ✅ | Knowledge 沉淀 + IterationLoop（12 spec / 100 runs 全绿，成功标准 1–6 闭环） |
 
 ---
 
@@ -193,5 +193,6 @@
 3. ~~`git init` 并完成首次提交~~ → ✅ 已完成（commit `1d59620`）
 4. ~~Sprint 3 —— 动态修改能力 + 回滚机制~~ → ✅ 已完成（`dynamic_methods` + `refinements`，13 用例全绿）
 5. ~~Sprint 4 —— Agent Loop 集成~~ → ✅ 已完成（`llm_adapter` + `agent_loop` + `deepseek_adapter`，31 用例全绿）
-6. **下一步**：Sprint 5 —— 知识沉淀与闭环（注释解析 / 自动 teach / 端到端闭环）
-5. **持续**：每日站会检查进度；任何缺口修复用例须通过一次变异验证方能算数
+6. ~~Sprint 5 —— 知识沉淀与闭环~~ → ✅ 已完成（`knowledge` + `iteration` + learn 工具，16 用例全绿；全量 12 spec / 100 runs / 264 assertions）
+7. **下一步**：Sprint 6 待规划（如：代码级自修改闭环、DeepSeek 真实链路冒烟、CI 接入）
+8. **持续**：每日站会检查进度；任何缺口修复用例须通过一次变异验证方能算数

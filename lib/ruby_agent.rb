@@ -8,6 +8,8 @@ require_relative 'ruby_agent/refinements'
 require_relative 'ruby_agent/llm_adapter'
 require_relative 'ruby_agent/agent_loop'
 require_relative 'ruby_agent/deepseek_adapter'
+require_relative 'ruby_agent/knowledge'
+require_relative 'ruby_agent/iteration'
 
 module RubyAgent
   class << self

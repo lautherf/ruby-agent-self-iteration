@@ -376,12 +376,58 @@ end
 
 ---
 
-## Sprint 5：知识沉淀与迭代闭环（第 7 周）
+## Sprint 5：知识沉淀与迭代闭环（第 7 周）✅ 已完成 2026-09-11
 
 ### 目标
-- 实现注释解析（`# @doc`）
-- 支持知识写回
-- 验证迭代闭环
+- 实现注释解析（`# @doc`）—— 已在 Sprint 1 前移交付 ✅
+- 支持知识写回 — **Knowledge 经验仓库 + Agent `learn` 工具**
+- 验证迭代闭环 — **IterationLoop**（成功标准 #5「经验写回」+ #6「下一轮从新知识出发」）
+
+### 交付物（v0.5 · 知识沉淀 + 闭环）
+
+| 交付物 | 文件 | 状态 |
+|--------|------|------|
+| Knowledge 经验仓库（doc 契约持久化 / 自动 id / 内容去重 / 原子落盘 / 线程安全） | `lib/ruby_agent/knowledge.rb` | ✅ |
+| Agent `learn` 工具 + `:learn` 事件 + `state.learned`（注入 knowledge: 时注册） | `lib/ruby_agent/agent_loop.rb` | ✅ |
+| IterationLoop 闭环编排（多轮执行 → reflect 沉淀 → Hub 反馈 → 下轮注入） | `lib/ruby_agent/iteration.rb` | ✅ |
+| 可运行的离线闭环演示 | `examples/iteration_closed_loop.rb` | ✅ |
+| 契约白名单新增 `tags` 键（经验标签） | `lib/ruby_agent/doc.rb` | ✅ |
+
+**对应测试**：`spec/knowledge_spec.rb`（10 用例）+ `spec/iteration_spec.rb`（6 用例）。
+
+**Knowledge 设计要点**：
+- 经验不引入第二套格式，仍走「注释即契约」：每个 lesson 是 lessons.rb 里 `# @doc note: ...`
+  悬空的 `def lesson_XXX\nend` 存根，天然被 DocParser / DocPlugin / for_llm 复用。
+- 写回链路 = `Doc#validate!`（注释层白名单/禁换行/长度）→ `RubyVM` 试编译（代码层）
+  → tmp + rename（原子替换）。任一步失败即丢弃，不落盘（失败关闭）。
+- 去重按内容：重复经验返回既有 id，不产生双份。
+- 并发：读-改-写全程 `Mutex#synchronize`，线程测试 8 并发零 lost update。
+
+**IterationLoop 闭环语义**：
+```
+task → AgentLoop(fresh) → 任务完成 → reflect → Knowledge 沉淀
+     → DocHub 里的 knowledge 插件 reload → 下一轮 system prompt 已含上一轮知识
+```
+- `reflect` 可注入（`state -> [{lesson:, tags:}]`）；缺省取 Agent 通过 `learn` 工具自学的经验。
+- `IterationLoop` 初始化时把 Knowledge 以 `knowledge` 插件挂上 Hub，闭环对 Agent 完全透明。
+
+**测试结果**：
+```
+spec/knowledge_spec.rb: 10 runs, 33 assertions, 0 failures（含 8 线程并发、原子 rename、多行拒写）
+spec/iteration_spec.rb:  6 runs, 17 assertions, 0 failures（含闭环跨轮注入、learn 事件、reflect 沉淀）
+全量: 12 spec / 100 runs / 264 assertions / 0 failures / 1 skip（zeitwerk 未装，预期）
+```
+
+### 验收标准（README 成功标准 #5 #6）
+
+| 标准 | 对应测试 | 状态 |
+|------|----------|------|
+| Agent 把这次经验写回知识库（持久化、去重、可回读） | `knowledge_spec.rb` 全套 | ✅ |
+| 下一次迭代从更新后的知识出发（跨轮闭环） | `test_next_iteration_reads_previous_lesson_in_system_prompt` | ✅ |
+| Agent 自学会（learn 工具）可被闭环自动回收 | `test_default_reflect_consumes_agent_learned_lessons` | ✅ |
+| 写入安全：多行注入被拒、原子落盘无半截、并发不丢 | `test_add_rejects_multiline_*` / `test_add_is_*` | ✅ |
+
+> 命令复习：`rake ruby_agent:test` 或 `ruby -Ilib examples/iteration_closed_loop.rb`（离线闭环演示）。
 
 ### 前置修正（来自 doc_demo 实证，必读 `docs/demo-review.md`）
 1. **格式定稿**：`# @doc key: value`，紧贴 `def` 上方；解析器需覆盖 `foo?` / `foo!` / `foo=` / `def self.foo` 等方法名形态。
@@ -418,7 +464,7 @@ end
 | 2 | W3 | DocHub 核心（多版本并行） | 注册表可用 | ✅ 完成 |
 | 3 | W4 | 动态修改 + Refinements 作用域 | 可逆修改 | ✅ 完成 |
 | 4 | W5-6 | Agent Loop + LLM Adapter + DeepSeek Adapter | 端到端运行 | ✅ 完成 |
-| 5 | W7 | 知识沉淀 + 闭环验证 | 迭代闭环 | ⬜ 待开始 |
+| 5 | W7 | 知识沉淀 + 闭环验证 | 迭代闭环 | ✅ 完成 |
 
 > **范围前移说明**：Sprint 5 原定的"注释解析（`# @doc`）"因参考 Demo 暴露三个缺口，
 > 已提前至 Sprint 1 交付并用回归测试固化。Sprint 5 相应收窄为"知识写回 + 闭环验证"。
@@ -451,9 +497,9 @@ end
 
 ## 下一步行动
 
-1. **当前焦点**：Sprint 5 —— 知识沉淀与迭代闭环（注释解析已前移交付；本轮聚焦自动 teach 写回 + 端到端闭环验证）。
-   Sprint 4 Agent Loop 集成（ReAct 循环 / 事件系统 / 内置工具 / DeepSeek Adapter）已全部交付。
-2. **每日站会**：检查测试通过率（当前 `rake ruby_agent:test` 全绿：84 runs / 214 assertions，10 个 spec 文件，1 预期 skip）
+1. ~~Sprint 5~~ — 知识沉淀与迭代闭环 ✅ 已完成（`knowledge` + `iteration`，16 用例全绿；离线闭环演示见
+   `ruby -Ilib examples/iteration_closed_loop.rb`）。README 成功标准 1–6 已全部闭环。
+2. **每日站会**：检查测试通过率（当前 `rake ruby_agent:test` 全绿：12 spec / 100 runs / 264 assertions，1 预期 skip）
 3. **Sprint 评审**：每个 Sprint 末演示可运行版本
 4. **持续集成**：push 即触发测试（仓库已 `git init` 并完成首次提交 `1d59620`）
 5. **测试纪律**：任何声称修复某缺口的用例，都必须能通过一次变异验证把它弄红

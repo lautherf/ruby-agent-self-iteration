@@ -30,7 +30,7 @@ module RubyAgent
 
     # 运行状态快照
     class State
-      attr_accessor :task, :plugins, :steps, :answer, :error, :status
+      attr_accessor :task, :plugins, :steps, :answer, :error, :status, :learned
 
       def initialize
         @task = nil
@@ -39,6 +39,7 @@ module RubyAgent
         @answer = nil
         @error = nil
         @status = :idle
+        @learned = []   # Sprint 5：Agent 通过 learn 工具沉淀的经验记录
       end
 
       def finished?
@@ -48,16 +49,18 @@ module RubyAgent
 
     attr_reader :hub, :llm, :state, :events, :tools
 
-    def initialize(hub:, llm:, max_steps: 8, system_prompt: DEFAULT_SYSTEM_PROMPT)
+    def initialize(hub:, llm:, max_steps: 8, system_prompt: DEFAULT_SYSTEM_PROMPT, knowledge: nil)
       @hub = hub
       @llm = llm
       @max_steps = max_steps
       @system_prompt = system_prompt
+      @knowledge = knowledge
       @tools = {}
       @events = []
       @observers = []
       @state = State.new
       register_default_tools
+      register_learn_tool if @knowledge
     end
 
     # 注册工具：name => 接收解析后 input 的 block
@@ -218,6 +221,25 @@ module RubyAgent
         method = input['method'] || input[:method]
         spec = input.reject { |k, _v| %w[plugin method].include?(k.to_s) }.transform_keys(&:to_sym)
         @hub.teach(plugin, method, **spec)
+      end
+    end
+
+    # Sprint 5：learn 工具 —— Agent 把本次经验沉淀进 Knowledge 仓库。
+    # 注入 knowledge: 时注册；沉淀成功发出 :learn 事件并记入 state.learned。
+    def register_learn_tool
+      register_tool('learn') do |input|
+        input = {} if input.nil?
+        lesson = (input['lesson'] || input[:lesson]).to_s.strip
+        raise '学习内容不能为空' if lesson.empty?
+
+        tags = (input['tags'] || input[:tags]).to_s.strip
+        id = @knowledge.add(lesson, tags: tags)
+        raise '经验沉淀失败' unless id
+
+        record = { id: id, lesson: lesson, tags: tags }
+        @state.learned << record
+        emit(:learn, **record)
+        "已沉淀经验 #{id}"
       end
     end
 
