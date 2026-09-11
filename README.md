@@ -23,8 +23,9 @@ rake ruby_agent:test:verbose
 
 ## 当前状态（2026-09-11）
 
-Sprint 5 交付完成，**迭代闭环端到端可运行**。**12 个 spec / 100 runs / 264 assertions 全绿**（对应成功标准 1–6 全部闭环）：
-> 基线：Sprint 4 终点 84 runs / 214 assertions → Sprint 5 新增 16 runs。
+Sprint 6 交付完成，**代码级自修改闭环端到端可运行**。**14 个 spec / 119 runs / 330 assertions 全绿**
+（成功标准 1–6 全部闭环；代码改坏了自动回滚）：
+> 基线：Sprint 5 终点 100 runs / 264 assertions → Sprint 6 新增 19 runs。
 
 | 层 | 文件 | 职责 |
 |----|------|------|
@@ -33,10 +34,11 @@ Sprint 5 交付完成，**迭代闭环端到端可运行**。**12 个 spec / 100
 | 中枢层 | `lib/ruby_agent/doc_hub.rb` | `mount` / `unmount` / `[]` / `for_llm` / `teach` / `watch_all` |
 | 动态层 | `lib/ruby_agent/dynamic_methods.rb` | 方法覆盖 + 回滚；`lib/ruby_agent/refinements.rb` 词法作用域精化 |
 | 适配层 | `lib/ruby_agent/llm_adapter.rb` | LLM 抽象基类（`chat` / `chat_stream` / `streaming?`）+ 测试用 `MockLLM` |
-| 循环层 | `lib/ruby_agent/agent_loop.rb` | ReAct 循环：`run` / 工具注册（含 `learn`）/ 事件系统 / 状态同步 |
+| 循环层 | `lib/ruby_agent/agent_loop.rb` | ReAct 循环：`run` / 工具注册 / 事件系统 / 状态同步 |
 | 供应商 | `lib/ruby_agent/deepseek_adapter.rb` | DeepSeek Chat Completions + SSE 流式 + 错误分级与重试 |
 | 沉淀层 | `lib/ruby_agent/knowledge.rb` | 经验仓库：`add` / `lessons` / `load!`（doc 契约持久化，去重 + 原子落盘 + 线程安全） |
 | 闭环层 | `lib/ruby_agent/iteration.rb` | `IterationLoop`：多轮执行 → reflect 沉淀 → 下轮注入 |
+| 代码层 | `lib/ruby_agent/code_editor.rb` | 代码级编辑：单方法替换 / 试编译 / 原子落盘 / 快照栈回滚 / 作用域隔离 |
 
 其中 `spec/regression_gaps_spec.rb` 用三条回归测试固化了参考 Demo 暴露的三个缺口——
 任何一次回退都会立刻变红。缺口的成因与证据见 [doc-demo-review.md](./docs/doc-demo-review.md)。
@@ -57,7 +59,8 @@ ruby-agent-self-iteration/
 │   ├── test-template.md          # 测试模板
 │   └── checklist.md              # 交付检查清单
 ├── examples/
-│   └── iteration_closed_loop.rb  # 离线闭环演示（ruby -Ilib examples/iteration_closed_loop.rb）
+│   ├── iteration_closed_loop.rb  # 离线闭环演示（知识沉淀，Sprint 5）
+│   └── code_self_modify.rb       # 离线自改演示（代码级回滚闭环，Sprint 6）
 ├── lib/
 │   ├── ruby_agent.rb             # 主入口（Zeitwerk 延迟加载）
 │   └── ruby_agent/
@@ -67,10 +70,11 @@ ruby-agent-self-iteration/
 │       ├── dynamic_methods.rb    # 动态修改：方法覆盖 + 回滚
 │       ├── refinements.rb        # 词法作用域精化
 │       ├── llm_adapter.rb        # LLM 抽象基类 + MockLLM
-│       ├── agent_loop.rb         # ReAct Agent 循环
+│       ├── agent_loop.rb         # ReAct Agent 循环（含 read_code / apply_code / verify）
 │       ├── deepseek_adapter.rb   # DeepSeek 供应商实现
 │       ├── knowledge.rb          # 经验仓库：沉淀 / 去重 / 原子落盘
-│       └── iteration.rb          # 迭代闭环：多轮执行 + 沉淀 + 反馈
+│       ├── iteration.rb          # 迭代闭环：多轮执行 + 沉淀 + 反馈
+│       └── code_editor.rb        # 代码级编辑：替换 / 试编译 / 回滚 / 作用域隔离
 ├── spec/
 │   ├── spec_helper.rb            # 测试配置与夹具
 │   ├── ruby_agent_spec.rb        # 入口与组件装配
@@ -84,7 +88,9 @@ ruby-agent-self-iteration/
 │   ├── deepseek_adapter_spec.rb  # DeepSeek 适配器：请求 / 流式 / 错误
 │   ├── regression_gaps_spec.rb   # 回归：三个缺口
 │   ├── knowledge_spec.rb         # 沉淀层：增量 / 去重 / 并发 / 原子落盘
-│   └── iteration_spec.rb         # 闭环层：跨轮注入 / reflect / 自学回收
+│   ├── iteration_spec.rb         # 闭环层：跨轮注入 / reflect / 自学回收
+│   ├── code_editor_spec.rb       # 代码层：定位 / 替换 / 回滚 / 作用域
+│   └── code_loop_spec.rb         # 代码闭环：apply → verify → 自动回滚 → 重试
 └── plugins/                      # 插件目录（用户自定义）
 ```
 
@@ -135,6 +141,8 @@ ruby-agent-self-iteration/
 | **DeepSeekAdapter** | 首个真实供应商实现；SSE 流式、错误分级（`APIError` / `TransportError`）与线性退避重试 |
 | **Knowledge** | 经验仓库：Agent 自学 `learn` 的落点；doc 契约持久化、内容去重、原子落盘、线程安全 |
 | **IterationLoop** | 迭代闭环：多轮执行 → reflect 沉淀 → Hub 反馈 → 下一轮从更新后的知识出发 |
+| **CodeEditor** | 代码级编辑：单方法替换 / 整文件试编译 / 原子落盘 / 快照栈回滚 / 匿名 Module 作用域隔离 |
+| **auto_rollback** | Agent 改错代码后，verify 失败即自动回滚，把 observation 回灌给 LLM 重试 |
 
 ## 核心原则
 
@@ -249,6 +257,28 @@ knowledge.lessons                     # => [{id: "lesson_001", note: "先看文�
 > 完整可运行演示：`ruby -Ilib examples/iteration_closed_loop.rb`（全离线）。
 > `reflect:` 可注入来定制「如何从本轮状态提炼经验」；缺省回收 Agent 通过 `learn` 工具自学的经验。
 
+### 7. 代码级自修改闭环（Sprint 6）
+
+Agent 现在能安全地改**方法体**，改错了自动回滚：
+
+```ruby
+agent = RubyAgent::AgentLoop.new(hub: hub, llm: llm)   # auto_rollback 缺省开启
+
+agent.run('把 solve 修正为返回正确结果')
+# Agent 的轨迹（MockLLM/真模型均可）：
+#   apply_code: {"plugin":"math","method":"solve","code":"def solve(a,b) ... end"}
+#   verify:     {"plugin":"math","method":"solve","args":[1,2],"expected":3}
+```
+
+内置工具：`list_docs` / `read_docs` / `teach` / `read_code` / `apply_code` / `verify`
+（注入 `knowledge:` 后额外有 `learn`）。
+- `apply_code`：应用新方法体，整文件试编译过不了不落盘（失败关闭）。
+- `verify`：在**匿名 Module 作用域**真实求值；期望不符 → **自动回滚**并把
+  observation「已自动回滚」回灌给 LLM → Agent 重试（成功标准 #3）。
+- `state.code_changes` 全程审计：`applied → rolled_back / verified`。
+
+> 可运行演示：`ruby -Ilib examples/code_self_modify.rb`（改错→回滚→重试→验证通过，全离线）。
+
 ## 迭代规划
 
 详见 [sprint-plan.md](./docs/sprint-plan.md)
@@ -263,6 +293,7 @@ knowledge.lessons                     # => [{id: "lesson_001", note: "先看文�
 | 3 | W4 | 动态修改能力 | ✅ 完成 |
 | 4 | W5-6 | Agent Loop 集成 | ✅ 完成 |
 | 5 | W7 | 知识沉淀与闭环 | ✅ 完成 |
+| 6 | W8 | 代码级自修改闭环 | ✅ 完成 |
 
 ## TDD 实践
 

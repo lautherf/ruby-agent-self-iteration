@@ -144,6 +144,27 @@
 
 ---
 
+## Sprint 6：代码级自修改闭环（第 8 周）✅ 已完成 2026-09-11
+
+### 测试驱动开发
+
+#### 阶段 1：CodeEditor
+- [x] `spec/code_editor_spec.rb`（13 用例，28 assertions，全绿）
+- [x] 测试单方法定位 / self 方法 / 方法名不匹配拒写
+- [x] 测试语法错误拒写（磁盘不变）、原子落盘无 .tmp
+- [x] 测试快照栈回滚（逐次 + 幂等）、scope 作用域隔离、6 线程并发
+- [x] 实现 `lib/ruby_agent/code_editor.rb`
+
+#### 阶段 2：闭环
+- [x] `spec/code_loop_spec.rb`（6 用例，38 assertions，全绿）
+- [x] 测试 apply→verify 通过置 `:verified`（`:code_change`/`:verify` 事件）
+- [x] 测试验证失败自动回滚 → observation 回灌 → 重试成功（闭环核心）
+- [x] 测试语法错误作为 observation 且进程不中断
+- [x] 实现 `read_code`/`apply_code`/`verify` 工具 + `auto_rollback` + `state.code_changes`
+- [x] 离线自改闭环演示 `examples/code_self_modify.rb`（`ruby -Ilib examples/code_self_modify.rb`）
+
+---
+
 ## 质量门禁
 
 每个 Sprint 完成标准：
@@ -183,6 +204,7 @@
 | W4 | 动态修改可用 | 可逆修改能力 |
 | W5-6 | Agent Loop 可用 ✅ | ReAct 循环 + 事件系统 + DeepSeek Adapter（10 spec / 84 runs 全绿） |
 | W7 | 完整迭代闭环 ✅ | Knowledge 沉淀 + IterationLoop（12 spec / 100 runs 全绿，成功标准 1–6 闭环） |
+| W8 | 代码级自修改 ✅ | CodeEditor + 代码工具 + 自动回滚（14 spec / 119 runs 全绿） |
 
 ---
 
@@ -194,5 +216,6 @@
 4. ~~Sprint 3 —— 动态修改能力 + 回滚机制~~ → ✅ 已完成（`dynamic_methods` + `refinements`，13 用例全绿）
 5. ~~Sprint 4 —— Agent Loop 集成~~ → ✅ 已完成（`llm_adapter` + `agent_loop` + `deepseek_adapter`，31 用例全绿）
 6. ~~Sprint 5 —— 知识沉淀与闭环~~ → ✅ 已完成（`knowledge` + `iteration` + learn 工具，16 用例全绿；全量 12 spec / 100 runs / 264 assertions）
-7. **下一步**：Sprint 6 待规划（如：代码级自修改闭环、DeepSeek 真实链路冒烟、CI 接入）
-8. **持续**：每日站会检查进度；任何缺口修复用例须通过一次变异验证方能算数
+7. ~~Sprint 6 —— 代码级自修改闭环~~ → ✅ 已完成（`code_editor` + 代码工具，19 用例全绿；全量 14 spec / 119 runs / 330 assertions）
+8. **下一步**：真实 DeepSeek 链路冒烟、CI 接入、H4 竞态收尾
+9. **持续**：每日站会检查进度；任何缺口修复用例须通过一次变异验证方能算数

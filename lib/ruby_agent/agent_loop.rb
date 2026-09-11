@@ -2,6 +2,7 @@
 
 require 'json'
 require_relative 'llm_adapter'
+require_relative 'code_editor'
 
 module RubyAgent
   # AgentLoop —— ReAct 循环：Thought → Action → Observation → … → Final Answer。
@@ -30,7 +31,7 @@ module RubyAgent
 
     # 运行状态快照
     class State
-      attr_accessor :task, :plugins, :steps, :answer, :error, :status, :learned
+      attr_accessor :task, :plugins, :steps, :answer, :error, :status, :learned, :code_changes
 
       def initialize
         @task = nil
@@ -39,7 +40,8 @@ module RubyAgent
         @answer = nil
         @error = nil
         @status = :idle
-        @learned = []   # Sprint 5：Agent 通过 learn 工具沉淀的经验记录
+        @learned = []          # Sprint 5：Agent 通过 learn 工具沉淀的经验记录
+        @code_changes = []     # Sprint 6：Agent 代码级自改的审计轨迹（applied/verified/rolled_back）
       end
 
       def finished?
@@ -49,16 +51,19 @@ module RubyAgent
 
     attr_reader :hub, :llm, :state, :events, :tools
 
-    def initialize(hub:, llm:, max_steps: 8, system_prompt: DEFAULT_SYSTEM_PROMPT, knowledge: nil)
+    def initialize(hub:, llm:, max_steps: 8, system_prompt: DEFAULT_SYSTEM_PROMPT, knowledge: nil, auto_rollback: true)
       @hub = hub
       @llm = llm
       @max_steps = max_steps
       @system_prompt = system_prompt
       @knowledge = knowledge
+      @auto_rollback = auto_rollback
       @tools = {}
       @events = []
       @observers = []
       @state = State.new
+      @editors = {}
+      @pending_change = nil
       register_default_tools
       register_learn_tool if @knowledge
     end
@@ -148,6 +153,7 @@ module RubyAgent
       @state = State.new
       @state.task = task
       @state.status = :running
+      @pending_change = nil   # 每次 run 独立，不留跨任务的悬空回滚
     end
 
     def build_messages(task)
@@ -212,6 +218,49 @@ module RubyAgent
       { ok: false, error: "#{e.class}: #{e.message}" }
     end
 
+    # —— Sprint 6 代码工具辅助 ——
+
+    def editor_name(input)
+      input = {} if input.nil?
+      name = (input['plugin'] || input[:plugin]).to_s
+      raise ArgumentError, "插件缺失" if name.empty?
+      raise ArgumentError, "插件不存在: #{name}" if @hub.get(name).nil?
+
+      name
+    end
+
+    # 取插件路径对应的 CodeEditor（按路径缓存）
+    def editor_for_plugin(input)
+      name = editor_name(input)
+      path = @hub.get(name).path
+      (@editors[path] ||= CodeEditor.new(path))
+    end
+
+    # 验证通过：把对应该插件/方法的最近一次 applied 标记为 verified
+    def mark_code_verified(plugin, method)
+      record = @state.code_changes.reverse.find do |c|
+        c[:plugin] == plugin && c[:method] == method && c[:status] == :applied
+      end
+      record[:status] = :verified if record
+      record
+    end
+
+    # 回滚上一次代码变更（仅限同名插件的未决变更），返回是否执行了回滚
+    def rollback_pending(plugin, method)
+      pending = @pending_change
+      return false unless pending && pending[:plugin] == plugin && pending[:method] == method
+
+      if pending[:editor].rollback!
+        record = pending.slice(:plugin, :method).merge(status: :rolled_back)
+        @state.code_changes << record
+        emit(:rollback, **record)
+        @pending_change = nil
+        true
+      else
+        false
+      end
+    end
+
     def register_default_tools
       register_tool('list_docs') { |_input| @hub.for_llm }
       register_tool('read_docs') { |_input| @hub.for_llm }
@@ -221,6 +270,56 @@ module RubyAgent
         method = input['method'] || input[:method]
         spec = input.reject { |k, _v| %w[plugin method].include?(k.to_s) }.transform_keys(&:to_sym)
         @hub.teach(plugin, method, **spec)
+      end
+      register_code_tools
+    end
+
+    # Sprint 6：代码级自修改工具 —— read_code / apply_code / verify。
+    #
+    # 闭环语义：apply_code 应用新方法体（试编译+原子落盘）→ verify 用真实求值验证；
+    # 验证失败且 auto_rollback 开启时，**自动回滚到上一版本**并把结果回灌给 LLM，
+    # 让 Agent 基于"已自动回滚"的 observation 重试 —— 成功标准 #3 的代码层落地。
+    def register_code_tools
+      register_tool('read_code') do |input|
+        method = (input['method'] || input[:method]).to_s
+        editor_for_plugin(input).read_method(method) || "未找到方法 #{method}"
+      end
+
+      register_tool('apply_code') do |input|
+        method = (input['method'] || input[:method]).to_s
+        code = input['code'] || input[:code] || input['source'] || ''
+        editor = editor_for_plugin(input)
+        raise "替换失败：语法错误或方法名不匹配 #{method}" unless editor.replace(method, code)
+
+        @pending_change = { plugin: editor_name(input), method: method, editor: editor }
+        record = { plugin: editor_name(input), method: method, status: :applied }
+        @state.code_changes << record
+        emit(:code_change, **record)
+        "已应用新实现到 #{record[:plugin]}##{method}"
+      end
+
+      register_tool('verify') do |input|
+        method = (input['method'] || input[:method]).to_s
+        args = Array(input['args'] || input[:args])
+        expected = (input['expected'] || input[:expected]).to_s
+        editor = editor_for_plugin(input)
+
+        scope = editor.scope
+        obj = Object.new.extend(scope)
+        actual = scope.respond_to?(method) ? scope.send(method, *args) : obj.send(method, *args)
+
+        if actual.to_s == expected
+          @pending_change = nil if @pending_change&.[](:method) == method && @pending_change[:editor] == editor
+          mark_code_verified(editor_name(input), method)
+          emit(:verify, plugin: editor_name(input), method: method, ok: true, actual: actual.to_s, expected: expected)
+          "验证通过: #{actual}"
+        else
+          rolled_back = @auto_rollback && rollback_pending(editor_name(input), method)
+          msg = "验证失败: 期望=#{expected} 实际=#{actual}"
+          msg += rolled_back ? '，已自动回滚' : '（未回滚）'
+          emit(:verify, plugin: editor_name(input), method: method, ok: false, actual: actual.to_s, expected: expected, rolled_back: !!rolled_back)
+          msg
+        end
       end
     end
 

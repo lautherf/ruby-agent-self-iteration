@@ -429,6 +429,62 @@ spec/iteration_spec.rb:  6 runs, 17 assertions, 0 failures（含闭环跨轮注�
 
 > 命令复习：`rake ruby_agent:test` 或 `ruby -Ilib examples/iteration_closed_loop.rb`（离线闭环演示）。
 
+---
+
+## Sprint 6：代码级自修改闭环（第 8 周）✅ 已完成 2026-09-11
+
+### 目标
+- 让 Agent 不只改 `# @doc` 元数据，而是安全地改**方法体**（源码）。
+- 代码层闭环：**apply_code → verify → 失败自动回滚 → 重试 → 验证通过**，对应
+  成功标准 #3「安全地应用修改，失败自动回滚」的代码层落地。
+
+### 交付物（v0.6 · 代码级自修改）
+
+| 交付物 | 文件 | 状态 |
+|--------|------|------|
+| CodeEditor（单方法定位 / 整体替换 def..end / 试编译 / 原子落盘 / 快照栈回滚 / 作用域隔离） | `lib/ruby_agent/code_editor.rb` | ✅ |
+| AgentLoop 新工具 `read_code` / `apply_code` / `verify` + 自动回滚 + 审计轨迹 | `lib/ruby_agent/agent_loop.rb` | ✅ |
+| 事件 `:code_change` / `:verify` / `:rollback` | `lib/ruby_agent/agent_loop.rb` | ✅ |
+| 离线自改闭环演示 | `examples/code_self_modify.rb` | ✅ |
+
+**对应测试**：`spec/code_editor_spec.rb`（13 用例）+ `spec/code_loop_spec.rb`（6 用例）。
+
+**CodeEditor 安全链（对齐核心原则）**：
+1. 方法名强校验：新代码必须定义同名方法，杜绝"换了个方法"。
+2. 代码层设闸：整文件 `RubyVM::InstructionSequence.compile`，过不了不落盘（失败关闭）。
+3. 原子提交：tmp + rename 替换，与 Doc 同款，不留半截状态。
+4. 快照栈：每次成功替换压栈，`rollback!` 按次恢复——修改必须可逆（可逆副作用）。
+5. 作用域隔离：`scope` 用匿名 `Module` 求值当前文件，验证新实现零全局污染。
+6. 并发：读-改-写 `Mutex` 全程持锁，6 线程并发替换后仍可编译回滚。
+
+**闭环语义（AgentLoop `auto_rollback: true` 缺省开启）**：
+```
+apply_code（新方法体 + 压快照 + :applied） → verify（scope 真实求值）
+  → 期望不符 → 自动 rollback + observation「已自动回滚」→ Agent 重试
+  → 验证通过 → 审计轨迹置 :verified → 磁盘固化正确实现
+```
+- `state.code_changes` 全量审计：每次应用/回滚/验证通过都留痕（applied / rolled_back / verified）。
+- `@pending_change` 只在 `apply_code`→`verify` 之间有效，`run` 结束即清空，跨任务无悬空回滚。
+
+**测试结果**：
+```
+spec/code_editor_spec.rb: 13 runs, 28 assertions, 0 failures（含 self 方法 / 语法拒写 / 快照栈 / 并发）
+spec/code_loop_spec.rb:     6 runs, 38 assertions, 0 failures（含失败自动回滚→重试成功闭环）
+全量: 14 spec / 119 runs / 330 assertions / 0 failures / 1 skip（zeitwerk 未装，预期）
+```
+
+### 验收标准（成功标准 #2 #3 的代码层）
+
+| 标准 | 对应测试 | 状态 |
+|------|----------|------|
+| 提出源码级修改方案并应用 | `test_apply_code_then_verify_success_marks_verified` | ✅ |
+| 失败自动回滚（磁盘与 scope 观察等价恢复） | `test_verify_failure_auto_rolls_back_and_retry_succeeds` | ✅ |
+| 语法错误不落盘、进程不中断 | `test_syntax_error_apply_is_captured_as_observation_and_loop_continues` | ✅ |
+| 修改可逆且幂等 | `test_rollback_is_stack_like_and_idempotent` | ✅ |
+| 效果零污染（匿名 Module 作用域） | `test_scope_invokes_replaced_method_isolated` | ✅ |
+
+> 命令复习：`rake ruby_agent:test`、`ruby -Ilib examples/code_self_modify.rb`（离线自改闭环）。
+
 ### 前置修正（来自 doc_demo 实证，必读 `docs/demo-review.md`）
 1. **格式定稿**：`# @doc key: value`，紧贴 `def` 上方；解析器需覆盖 `foo?` / `foo!` / `foo=` / `def self.foo` 等方法名形态。
 2. **两类写回必须分开**：
@@ -465,6 +521,7 @@ spec/iteration_spec.rb:  6 runs, 17 assertions, 0 failures（含闭环跨轮注�
 | 3 | W4 | 动态修改 + Refinements 作用域 | 可逆修改 | ✅ 完成 |
 | 4 | W5-6 | Agent Loop + LLM Adapter + DeepSeek Adapter | 端到端运行 | ✅ 完成 |
 | 5 | W7 | 知识沉淀 + 闭环验证 | 迭代闭环 | ✅ 完成 |
+| 6 | W8 | 代码级自修改闭环 | 安全自改 | ✅ 完成 |
 
 > **范围前移说明**：Sprint 5 原定的"注释解析（`# @doc`）"因参考 Demo 暴露三个缺口，
 > 已提前至 Sprint 1 交付并用回归测试固化。Sprint 5 相应收窄为"知识写回 + 闭环验证"。
@@ -497,9 +554,9 @@ spec/iteration_spec.rb:  6 runs, 17 assertions, 0 failures（含闭环跨轮注�
 
 ## 下一步行动
 
-1. ~~Sprint 5~~ — 知识沉淀与迭代闭环 ✅ 已完成（`knowledge` + `iteration`，16 用例全绿；离线闭环演示见
-   `ruby -Ilib examples/iteration_closed_loop.rb`）。README 成功标准 1–6 已全部闭环。
-2. **每日站会**：检查测试通过率（当前 `rake ruby_agent:test` 全绿：12 spec / 100 runs / 264 assertions，1 预期 skip）
-3. **Sprint 评审**：每个 Sprint 末演示可运行版本
-4. **持续集成**：push 即触发测试（仓库已 `git init` 并完成首次提交 `1d59620`）
-5. **测试纪律**：任何声称修复某缺口的用例，都必须能通过一次变异验证把它弄红
+1. ~~Sprint 5~~ — 知识沉淀与迭代闭环 ✅ 已完成（`knowledge` + `iteration`）
+2. ~~Sprint 6~~ — 代码级自修改闭环 ✅ 已完成（`code_editor` + 三项代码工具，19 用例全绿）
+3. **候选**：真实 DeepSeek 链路冒烟（`deepseek_adapter` 已就绪但从未真打 api）；CI 接入；H4 竞态收尾（插件层 registry 加锁）。
+4. **每日站会**：检查测试通过率（当前 `rake ruby_agent:test` 全绿：14 spec / 119 runs / 330 assertions，1 预期 skip）
+5. **Sprint 评审**：每个 Sprint 末演示可运行版本（`examples/iteration_closed_loop.rb`、`examples/code_self_modify.rb`）
+6. **测试纪律**：任何声称修复某缺口的用例，都必须能通过一次变异验证把它弄红
