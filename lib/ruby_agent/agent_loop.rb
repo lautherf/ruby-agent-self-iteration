@@ -41,7 +41,7 @@ PROMPT
       'verify' => '在内存作用域真实运行方法并比对期望值，参数：{"plugin":"插件名","method":"方法名","args":[..],"expected":期望值}。验证失败且之前有 apply_code 时，系统会自动回滚该修改。',
       'teach' => '写回插件方法的 @doc 元数据，参数：{"plugin":"插件名","method":"方法名","role":"..","note":".."}',
       'learn' => '把经验沉淀进知识仓库，参数：{"lesson":"经验文本","tags":"可选标签"}',
-      'remember' => '把一条对话写进记忆（记忆=结构化数据，经本体论校验），参数：{"kind":"fact|preference|event|meta，可选，默认 fact","who":"user 或 ra","note":"内容","tags":"可选标签"}',
+      'remember' => '把一条对话写进记忆（结构化数据，经本体论校验：kind/who/status 有受控取值，supersedes 必须指向真实存在的记录 id）。参数：{"kind":"fact|preference|task|event|meta，默认 fact","who":"user|ra|system|tool，默认 ra","note":"内容","status":"stated|confirmed，可选","about":"这条记忆关于谁，可选","supersedes":"被它取代的旧记录 id，可选（修订时用）","tags":"可选标签"}',
       'read_memory' => '按内容召回记忆中的对话，参数：{"query":"关键词，可空","limit":"条数，默认 5"}'
     }.freeze
 
@@ -426,12 +426,17 @@ PROMPT
         who = (input['who'] || input[:who] || 'ra').to_s
         note = (input['note'] || input[:note]).to_s.strip
         kind = (input['kind'] || input[:kind] || 'fact').to_s
+        status = (input['status'] || input[:status] || 'stated').to_s
+        about = (input['about'] || input[:about]).to_s
+        supersedes = (input['supersedes'] || input[:supersedes]).to_s
         raise '记忆内容不能为空' if note.empty?
-        id = @memory.add_turn(who: who, note: note, tags: (input['tags'] || input[:tags]), kind: kind)
+        id = @memory.add_turn(who: who, note: note, tags: (input['tags'] || input[:tags]),
+                              kind: kind, about: about, status: status, supersedes: supersedes)
         raise '记忆未落盘' unless id
-        record = { id: id, kind: kind, who: who, note: note, tags: normalize_tags(input['tags'] || input[:tags]) }
+        record = { id: id, kind: kind, who: who, note: note, status: status,
+                   tags: normalize_tags(input['tags'] || input[:tags]) }
         emit(:remember, **record)
-        "已写入记忆 #{id}（#{kind}）"
+        "已写入记忆 #{id}（#{kind}#{status == 'confirmed' ? '/confirmed' : ''}）" + (supersedes.empty? ? '' : "，取代 #{supersedes}")
       end
 
       register_tool('read_memory') do |input|
@@ -440,7 +445,11 @@ PROMPT
         lim = (input['limit'] || input[:limit] || 5).to_i
         hits = @memory.recall(query: q, limit: lim)
         next '（记忆为空）' if hits.empty?
-        hits.map { |t| "- #{t[:id]}[#{t[:who]}] #{t[:note]}" }.join("\n")
+        hits.map do |t|
+          rel = t[:supersedes] ? " (取代 #{t[:supersedes]})" : ''
+          state = t[:status] && t[:status] != 'stated' ? "[#{t[:status]}]" : ''
+          "- #{t[:id]}#{state}[#{t[:who]}] #{t[:note]}#{rel}"
+        end.join("\n")
       end
     end
 

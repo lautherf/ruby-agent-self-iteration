@@ -75,6 +75,60 @@ class MemorySpec < Minitest::Test
     end
   end
 
+  def test_ontology_controls_who_and_status
+    with_memory do |mem, _path|
+      assert_equal false, mem.add_turn(who: '管理员', note: 'x', kind: 'fact'), 'who 必须是受控取值'
+      assert_equal false, mem.add_turn(who: 'user', note: 'x', status: 'bogus'), '非法 status 必须拒绝'
+      assert_equal false, mem.add_turn(who: 'user', note: 'x', supersedes: 'turn_999'), 'supersedes 必须指向存在的记录'
+
+      assert mem.add_turn(who: 'system', note: '系统重启于 3 点', kind: 'event')
+      assert mem.add_turn(who: 'tool', note: 'verify 通过', kind: 'fact', status: 'confirmed')
+      assert_equal %w[system tool], mem.turns.map { |t| t[:who] }
+      assert_equal %w[stated confirmed], mem.turns.map { |t| t[:status] }
+    end
+  end
+
+  def test_ontology_about_optional_subject
+    with_memory do |mem, _path|
+      mem.add_turn(who: 'user', note: '项目名是 weixin', kind: 'fact', about: 'weixin')
+
+      assert_equal 'weixin', mem.turns.first[:about]
+      assert_equal 1, mem.recall(query: 'weixin', limit: 10).size, 'about 参与召回'
+      assert_equal 1, mem.recall(query: 'weixin 项目', limit: 10).size
+    end
+  end
+
+  def test_ontology_supersedes_chain_truth_by_latest
+    with_memory do |mem, _path|
+      old = mem.add_turn(who: 'user', note: '用户喜欢蓝色', kind: 'preference')
+      new = mem.revise!(old, note: '用户改主意了，现在喜欢绿色', kind: 'preference')
+
+      assert new, '修订必须能落盘'
+      old_rec = mem.turns.find { |t| t[:id] == old }
+      new_rec = mem.turns.find { |t| t[:id] == new }
+
+      assert_equal 'superseded', old_rec[:status], '旧记录只改状态，不覆盖原件'
+      assert_equal 'confirmed', new_rec[:status]
+      assert_equal old, new_rec[:supersedes], '新记录必须指向被取代的旧记录'
+
+      assert_equal [], mem.recall(query: '蓝色', limit: 10), '缺省不召回已废弃记录（真相由链头决定）'
+      assert_equal ['用户喜欢蓝色'], mem.recall(query: '蓝色', limit: 10, include_superseded: true).map { |t| t[:note] }
+      assert_equal ['用户改主意了，现在喜欢绿色'], mem.recall(query: '绿色', limit: 10).map { |t| t[:note] }
+      refute_includes mem.for_llm, '蓝色', '注入 system prompt 时跳过已废弃'
+    end
+  end
+
+  def test_ontology_lesson_from_traces_its_turns
+    with_memory do |mem, _path|
+      6.times { |i| mem.add_turn(who: 'user', note: "闲聊 #{i}", tags: 'chat') }
+      mem.consolidate!(keep: 2) { |b| "压 #{b.size} 条" }
+
+      lesson = mem.lessons.first
+      assert_equal %w[turn_001 turn_002 turn_003 turn_004], lesson[:from], '经验可追溯：from 记录折叠来源'
+      assert_equal 'confirmed', lesson[:status]
+    end
+  end
+
   def test_lessons_channel_independent
     with_memory do |mem, _path|
       mem.add_turn(who: 'user', note: '过程对话', tags: 'chat')

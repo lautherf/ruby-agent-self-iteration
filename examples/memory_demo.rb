@@ -25,7 +25,16 @@ Dir.mktmpdir('memdemo') do |dir|
 
   # —— 3. 遗忘 = 重构：把窗口外的旧对话折叠成一条 lesson ——
   memory.consolidate!(keep: 2) { |batch| "压缩了 #{batch.size} 条 #{batch.flat_map { |t| t[:tags] }.uniq.join('+')} 话题对话" }
-  puts "\n== 3. 折叠后的 memory.yaml —— 旧对话被删，只留最近 2 条 + 1 条压缩经验：\n"
+  puts "\n== 3. 折叠后的 memory.yaml —— 旧对话被删，只留最近 2 条 + 1 条压缩经验（from 留下折叠来源）：\n"
   puts File.read(path)
+
+  # —— 4. 变 = 修订：真相会变，改 = 新记录取代旧记录，不覆盖原件 ——
+  old = memory.add_turn(who: 'user', note: '用户喜欢蓝色', kind: 'preference')
+  memory.revise!(old, note: '用户改主意了，现在喜欢绿色', kind: 'preference')
+  puts "\n== 4. 修订之后 —— 旧记录只标 superseded，新记录指向它：\n"
+  puts File.read(path)
+  puts "   recall('蓝色') → #{memory.recall(query: '蓝色').map { |t| t[:note] }.inspect}（缺省跳过废弃）"
+  puts "   recall('绿色') → #{memory.recall(query: '绿色').map { |t| t[:note] }.inspect}"
+
   puts "== 结果: turns=#{memory.turns.size} lessons=#{memory.lessons.size} 可读/YAML合法=#{YAML.safe_load(File.read(path), permitted_classes: [Symbol], aliases: false)&.is_a?(Hash)}"
 end
