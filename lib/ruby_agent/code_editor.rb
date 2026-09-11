@@ -63,7 +63,32 @@ module RubyAgent
       false
     end
 
-    # 回滚最近一次替换（恢复快照里的旧代码），空栈幂等返回 false。
+    # 在文件末尾追加一个新方法（区别于 replace，replace 只改已存在方法）。
+    # ra 借此能"长出"新能力：新增方法追加在文件末，同样先试编译再原子落盘，
+    # 快照的 source 记为 nil，rollback! 时对应删除该追加段。
+    def add(method, new_source)
+      src = new_source.to_s
+      return false if src.strip.empty?
+      return false unless src =~ self.class.def_re(method)   # 必须定义同名方法
+      return false if read_method(method)                   # 已存在时用 replace，不重复追加
+
+      @mutex.synchronize do
+        lines = File.readlines(@path)
+        lines << "\n" unless lines.empty? || lines.last.end_with?("\n")
+        head = lines.size
+        new_lines = src.lines.map { |l| l.end_with?("\n") ? l : "#{l}\n" }
+        next_src = (lines + new_lines).join
+        RubyVM::InstructionSequence.compile(next_src)        # 代码层试编译
+        write_atomic(next_src)
+        @snapshots << { method: method.to_s, span: [head, head + new_lines.size - 1], source: nil }
+        true
+      end
+    rescue SyntaxError, StandardError => e
+      warn "[CodeEditor] #{File.basename(@path)} 新增失败，已丢弃: #{e.message}"
+      false
+    end
+
+    # 回滚最近一次替换（恢复快照里的旧代码 / 删除新增段），空栈幂等返回 false。
     def rollback!
       @mutex.synchronize do
         snap = @snapshots.pop
@@ -71,7 +96,11 @@ module RubyAgent
 
         lines = File.readlines(@path)
         head, tail = snap[:span]
-        lines[head..tail] = snap[:source]
+        if snap[:source].nil?
+          lines.slice!(head..tail)                           # 新增段：直接删除
+        else
+          lines[head..tail] = snap[:source]                  # 替换段：恢复旧代码
+        end
         next_src = lines.join
         RubyVM::InstructionSequence.compile(next_src)
         write_atomic(next_src)

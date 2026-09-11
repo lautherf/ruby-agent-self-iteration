@@ -35,7 +35,7 @@ agent.on(:llm_response) { |e| Kernel.puts "\n── 模型回复:\n#{e[:content]
 agent.on(:tool_call)    { |e| Kernel.puts "→ 调用工具: #{e[:tool]} #{e[:input]}" }
 agent.on(:observation)  { |e| Kernel.puts "  观察: #{e[:observation]}" }
 
-question = <<~ASK
+question = ARGV[0] || <<~ASK
   你是谁？你能说出关于你自己的哪些信息？请先调用 whoami（或 list_docs 看 ra 插件），
   再基于你读到的身份契约，用 Final Answer 做一段自我介绍。
 ASK

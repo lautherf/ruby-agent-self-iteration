@@ -156,4 +156,40 @@ class CodeEditorSpec < Minitest::Test
       assert RubyVM::InstructionSequence.compile(File.read(path))
     end
   end
+
+  def test_add_new_method_appends_to_file
+    with_plugin_file(DUAL_SOURCE) do |path|
+      editor = RubyAgent::CodeEditor.new(path)
+      ok = editor.add(:add, "def add(a, b)\n  a + b\nend")
+
+      assert ok, '新增方法应成功'
+      assert_equal "def add(a, b)\n  a + b\nend", editor.read_method(:add)
+      assert_equal ["solve", "mult", "add"], editor.methods, '按出现顺序包含新增方法'
+      src = File.read(path)
+      assert src.index('def add(a, b)') > src.index('def self.mult'),
+             '新方法应追加在文件末尾（不破坏既有方法）'
+      assert RubyVM::InstructionSequence.compile(src), '追加后全文件必须仍可编译'
+    end
+  end
+
+  def test_add_rollback_removes_added_method
+    with_plugin_file(DUAL_SOURCE) do |path|
+      editor = RubyAgent::CodeEditor.new(path)
+      editor.add(:add, "def add(a, b)\n  a + b\nend")
+
+      assert editor.rollback!, '新增后必须可回滚'
+      assert_nil editor.read_method(:add), '回滚后新增方法应被移除'
+      assert_includes File.read(path), 'def solve', '既有方法不受影响'
+    end
+  end
+
+  def test_add_rejects_wrong_method_name
+    with_plugin_file(DUAL_SOURCE) do |path|
+      editor = RubyAgent::CodeEditor.new(path)
+
+      assert_equal false, editor.add(:add, "def wrong_name(a, b)\n  a + b\nend"),
+                   '新代码必须定义同名方法'
+      assert_nil editor.read_method(:add), '失败时磁盘不变'
+    end
+  end
 end

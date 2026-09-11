@@ -129,4 +129,22 @@ class CodeLoopSpec < Minitest::Test
       assert_equal false, File.read(path).include?('a * 5')
     end
   end
+
+  def test_apply_code_can_add_new_method_then_verify
+    with_hub do |hub, path|
+      agent = build_loop(hub, [
+        "Action: apply_code\nAction Input: {\"plugin\":\"math\",\"method\":\"add\",\"code\":\"def add(a, b)\\n  a + b\\nend\"}",
+        "Action: verify\nAction Input: {\"plugin\":\"math\",\"method\":\"add\",\"args\":[2,3],\"expected\":5}",
+        'Final Answer: done'
+      ])
+
+      assert quietly { agent.run('给数学插件新增加法') }
+
+      assert_equal 'done', agent.state.answer
+      assert_equal :verified, agent.state.code_changes.last[:status]
+      assert_includes File.read(path), 'def add(a, b)', '新方法必须真实落盘'
+      scope = RubyAgent::CodeEditor.new(path).scope
+      assert_equal 5, Object.new.extend(scope).add(2, 3), '落盘后的新方法必须真实可执行'
+    end
+  end
 end

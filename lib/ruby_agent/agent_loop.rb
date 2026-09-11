@@ -36,7 +36,7 @@ PROMPT
       'read_docs' => '查看全部插件的 @doc 知识，参数：{}',
       'whoami' => '向 ra 自己的身份契约提问：我是谁、我学过什么、我不能做什么，参数：{}',
       'read_code' => '读取某个方法的当前源码，参数：{"plugin":"插件名","method":"方法名"}',
-      'apply_code' => '把方法体整体替换为新代码，参数：{"plugin":"插件名","method":"方法名","code":"def 方法名(...)\\n新实现\\nend"}。要求 code 定义同名方法，语法错会自动拒绝。',
+      'apply_code' => '把方法体整体替换为新代码；方法不存在时自动新增（追加到文件末尾），参数：{"plugin":"插件名","method":"方法名","code":"def 方法名(...)\\n实现\\nend"}。要求 code 定义同名方法，语法错会自动拒绝。',
       'verify' => '在内存作用域真实运行方法并比对期望值，参数：{"plugin":"插件名","method":"方法名","args":[..],"expected":期望值}。验证失败且之前有 apply_code 时，系统会自动回滚该修改。',
       'teach' => '写回插件方法的 @doc 元数据，参数：{"plugin":"插件名","method":"方法名","role":"..","note":".."}',
       'learn' => '把经验沉淀进知识仓库，参数：{"lesson":"经验文本","tags":"可选标签"}'
@@ -320,7 +320,12 @@ PROMPT
         method = (input['method'] || input[:method]).to_s
         code = input['code'] || input[:code] || input['source'] || ''
         editor = editor_for_plugin(input)
-        raise "替换失败：语法错误或方法名不匹配 #{method}" unless editor.replace(method, code)
+        ok = if editor.read_method(method).nil?
+               editor.add(method, code)      # 不存在 → 追加新方法（自改长出能力）
+             else
+               editor.replace(method, code)  # 已存在 → 整体替换
+             end
+        raise "替换失败：语法错误或方法名不匹配 #{method}" unless ok
 
         @pending_change = { plugin: editor_name(input), method: method, editor: editor }
         record = { plugin: editor_name(input), method: method, status: :applied }

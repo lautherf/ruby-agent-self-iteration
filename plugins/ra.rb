@@ -26,3 +26,24 @@ end
 # @doc note: 我不替代 Git，但让每次修改都可追溯、可回滚
 def what_i_must_not
 end
+# @doc role: 加法运算：返回两个数的和
+# @doc note: 支持整数、负数和小数相加，结果精确
+def add(a, b)
+  a + b
+end
+# @doc role: 减法运算：返回两个数的差
+# @doc note: 支持整数、负数和小数相减，结果精确
+def sub(a, b)
+  a - b
+end
+# @doc role: 乘法运算：返回两个数的积
+# @doc note: 支持整数、负数和小数相乘，结果精确
+def mul(a, b)
+  a * b
+end
+# @doc role: 除法运算：返回两个数的商
+# @doc note: 支持整数、负数和小数相除，除数为0时抛出 ArgumentError
+def div(a, b)
+  raise ArgumentError, "除数不能为0" if b == 0
+  a.to_f / b
+end
