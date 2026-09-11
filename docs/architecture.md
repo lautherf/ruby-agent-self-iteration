@@ -229,29 +229,36 @@ end
 
 ### 5. Refinements 作用域控制
 
-```ruby
-# 插件中使用 Refinements
-module MyRefinement
-  refine String do
-    def my_method
-      "refined: #{self}"
-    end
-  end
-end
+`RubyAgent::Refinements` 提供隔离式的动态方法精化：精化规则只在
+`scope_eval` / `scope_class` 打开的词法作用域内生效，作用域之外一律无感。
 
-class MyClass
-  using MyRefinement
-  
-  def test
-    "hello".my_method  # => "refined: hello"
-  end
-end
+```ruby
+refs = RubyAgent::Refinements.new
+refs.refine(String, :shout) { upcase }
+
+"hi".shout                      # => NoMethodError（全局未受影响）
+refs.scope_eval("'hi'.shout")   # => "HI"（作用域内生效）
+
+klass = refs.scope_class(<<~RUBY)
+  def greet = "hi".shout
+RUBY
+klass.new.greet                 # => "HI"
+
+refs.cleanup!                   # 注销精化，可重复调用（幂等）
+refs.cleaned_up?                # => true
 ```
 
 **关键特性：**
-- 局部作用域：只影响明确引用的类
-- 避免全局污染：不修改核心类
-- 可预测性：作用域清晰
+- 隔离作用域：仅作用于 `scope_eval` / `scope_class` 内部，全局与新方法上下文零泄漏
+- 避免全局污染：不修改核心类，精化模块为匿名 `Module.new`，无需注册全局常量
+- 可嵌套、可清理：多层嵌套时内层遮蔽外层且外层存活；`cleanup!` 幂等且清理后可复用
+
+**实现要点（`using` 的词法上下文约束）：**
+Ruby 规定 `Module#using` 只能出现在**非方法**的词法上下文中，在 `def` 内调用会抛
+`RuntimeError: Module#using is not permitted in methods`，且该限制取决于代码的**词法位置**，
+与运行时调用栈无关。因此实现把 `using` 预封装在类体处捕获的 lambda
+（`SCOPE_CLASS_BUILDER` / `SCOPE_EVAL_RUNNER`）中，由实例方法调用——既能在运行时动态激活
+任意精化模块，又无需把它注册为全局常量。
 
 ## 数据流
 
