@@ -23,18 +23,20 @@
 - [x] 配置 .gitignore
 - [x] 环境核查：Ruby 3.3.8 / minitest 5.20.0 可用；bundle、rspec、zeitwerk 不可用 → **测试栈定为纯 minitest**
 
-### 验收标准
+### 验收标准（minitest）
 ```ruby
 # spec/ruby_agent_spec.rb
-require 'spec_helper'
+require_relative 'spec_helper'
 
-RSpec.describe RubyAgent do
-  it 'can be loaded' do
-    expect(RubyAgent).not_to be_nil
+class RubyAgentSpec < Minitest::Test
+  def test_core_components_load_without_zeitwerk
+    assert RubyAgent.const_defined?(:Doc)
+    assert RubyAgent.const_defined?(:DocPlugin)
+    assert RubyAgent.const_defined?(:DocHub)
   end
 
-  it 'has a loader' do
-    expect(RubyAgent.loader).to respond_to :load_all
+  def test_doc_hub_is_exposed_as_singleton
+    assert_kind_of RubyAgent::DocHub, RubyAgent.doc_hub
   end
 end
 ```
@@ -74,7 +76,7 @@ end
 
 ### 测试栈决策（实测依据）
 
-- 框架：**minitest**（`Gemfile` 原声明的 rspec 未落地，Rakefile 已切换为 minitest 运行方式）
+- 框架：**minitest**（`Gemfile` 已声明 `minitest ~> 5.0`；沙箱无 `bundle`，Rakefile 直接以 `ruby -Ilib -Ispec` 运行）
 - 运行：`rake ruby_agent:test`，或 `ruby -Ilib -Ispec spec/<name>_spec.rb`
 - 依赖策略：`zeitwerk` 降级为**可选**依赖，核心三层零运行时依赖、可独立测试
 
@@ -82,15 +84,16 @@ end
 1. **Red**：编写失败测试
    ```ruby
    # spec/doc_plugin_spec.rb
-   RSpec.describe DocPlugin do
-     let(:plugin) { DocPlugin.new('test_plugin') }
-     
-     it 'has a name' do
-       expect(plugin.name).to eq('test_plugin')
+   class DocPluginSpec < Minitest::Test
+     def test_plugin_exposes_name
+       plugin = RubyAgent::DocPlugin.new('test_plugin', path)
+       assert_equal 'test_plugin', plugin.name
      end
-     
-     it 'is unloaded by default' do
-       expect(plugin).not.to be_loaded
+
+     def test_load_populates_registry_from_source
+       plugin = RubyAgent::DocPlugin.new('test_plugin', path)
+       plugin.load!
+       refute_empty plugin.registry
      end
    end
    ```
@@ -129,45 +132,67 @@ end
 - 支持按名寻址
 - 支持多版本并行
 
-### 测试驱动开发
+### 已落地（v0.1 · 单版本读写分离）
 
-> ⚠️ **以下为规划稿（RSpec 风格）**。实际测试栈已定为 **minitest**（见 Sprint 1「测试栈决策」），
-> 落地时请改写为 `class DocHubSpec < Minitest::Test`。此处保留原始规划以便对照。
+实现接口：`mount` / `unmount` / `[]` / `for_llm`（读，汇总全部插件）/ `teach`（写，定向到某插件）/ `watch_all`。
+对应测试见 `spec/doc_hub_spec.rb`（minitest，5 用例）：
 
 ```ruby
 # spec/doc_hub_spec.rb
-RSpec.describe DocHub do
-  let(:hub) { DocHub.new }
-  let(:plugin_v1) { DocPlugin.new('my_plugin', version: '1.0') }
-  let(:plugin_v2) { DocPlugin.new('my_plugin', version: '2.0') }
-  
-  describe '#register' do
-    it 'registers a plugin' do
-      hub.register(plugin_v1)
-      expect(hub.get('my_plugin')).to eq(plugin_v1)
-    end
-    
-    it 'allows multiple versions' do
-      hub.register(plugin_v1)
-      hub.register(plugin_v2)
-      expect(hub.get('my_plugin', version: '2.0')).to eq(plugin_v2)
+class DocHubSpec < Minitest::Test
+  include PluginFixture
+
+  def build_hub(path, name = 'math')
+    hub = RubyAgent::DocHub.new
+    hub.mount(RubyAgent::DocPlugin.new(name, path))
+    hub
+  end
+
+  def test_mount_loads_plugin_and_exposes_it_by_name
+    with_plugin_file do |path|
+      hub = build_hub(path)
+
+      refute_nil hub['math']
+      assert_equal 'math', hub['math'].name
     end
   end
-  
-  describe '#mount' do
-    it 'mounts a plugin' do
-      hub.register(plugin_v1)
-      hub.mount('my_plugin')
-      expect(plugin_v1).to be_loaded
+
+  def test_teach_routes_to_named_plugin
+    with_plugin_file do |path|
+      hub = build_hub(path)
+
+      assert quietly { hub.teach('math', :solve, note: 'hub 写入') }
+      assert_equal 'hub 写入', hub['math'].registry.dig('solve', 'note')
     end
   end
+
+  def test_teach_returns_false_for_unknown_plugin
+    with_plugin_file do |path|
+      refute build_hub(path).teach('nope', :solve, note: 'x')
+    end
+  end
+  # 另有 unmount / for_llm 聚合两个用例
 end
 ```
 
+### 待实现（Sprint 2 目标接口 · 多版本并行）
+
+> 以下接口**尚未实现**，为 Sprint 2 的目标设计，用于支撑「新旧版本并行验证」。
+> 键空间统一为 `String`，版本号缺省时取当前（最新）版本。
+
+```ruby
+# 目标接口（尚未实现）
+hub.register(plugin_v1)                 # 版本 '1.0'
+hub.register(plugin_v2)                 # 版本 '2.0'，与 v1 并存
+hub.get('my_plugin')                    # => 当前（最新）版本
+hub.get('my_plugin', version: '2.0')    # => plugin_v2
+hub.mount('my_plugin', version: '1.0')  # 挂载指定版本
+```
+
 ### 新增文件
-- `lib/doc_hub.rb`
-- `lib/plugin_registry.rb`
-- `spec/doc_hub_spec.rb`
+- `lib/ruby_agent/doc_hub.rb` ✅ 已落地（单版本）
+- `lib/ruby_agent/plugin_registry.rb` ⬜ 待实现（多版本注册表）
+- `spec/doc_hub_spec.rb` ✅ 已落地（5 用例）
 
 ---
 
@@ -178,31 +203,28 @@ end
 - 支持方法级回滚
 - 验证 Refinements 作用域控制
 
-### TDD 示例
+### TDD 示例（minitest）
 ```ruby
 # spec/dynamic_methods_spec.rb
-RSpec.describe DynamicMethodsModule do
-  include DynamicMethodsModule
-  
-  subject(:klass) do
+class DynamicMethodsSpec < Minitest::Test
+  def build_klass
     Class.new do
-      extend DynamicMethodsModule
-      
+      extend RubyAgent::DynamicMethodsModule
+
       def original_method
         'original'
       end
     end
   end
-  
-  it 'can override methods with rollback' do
-    klass.dynamic_method(:original_method) do
-      'modified'
-    end
-    
-    expect(klass.new.original_method).to eq('modified')
-    
+
+  def test_override_then_rollback
+    klass = build_klass
+
+    klass.dynamic_method(:original_method) { 'modified' }
+    assert_equal 'modified', klass.new.original_method
+
     klass.rollback!
-    expect(klass.new.original_method).to eq('original')
+    assert_equal 'original', klass.new.original_method
   end
 end
 ```
@@ -220,32 +242,30 @@ end
 - 读写走同一份 registry
 - 验证插件热替换
 
-### 测试驱动
+### 测试驱动（minitest · 示意，接口随实现调整）
 ```ruby
 # spec/agent_loop_spec.rb
-RSpec.describe AgentLoop do
-  let(:hub) { DocHub.new }
-  let(:agent) { AgentLoop.new(hub: hub) }
-  
-  it 'loads plugins on startup' do
-    plugin = DocPlugin.new('greeting', code: 'def greet; "hello"; end')
-    hub.register(plugin)
-    hub.mount('greeting')
-    
+class AgentLoopSpec < Minitest::Test
+  def test_loads_plugins_on_startup
+    hub = RubyAgent::DocHub.new
+    hub.mount(RubyAgent::DocPlugin.new('greeting', path))
+
+    agent = RubyAgent::AgentLoop.new(hub: hub)
     agent.run
-    expect(agent.state.plugins).to include('greeting')
+
+    assert_includes agent.state.plugins, 'greeting'
   end
-  
-  it 'supports hot reload' do
-    plugin_v1 = DocPlugin.new('plugin', version: '1.0')
-    plugin_v2 = DocPlugin.new('plugin', version: '2.0')
-    
-    hub.register(plugin_v1)
-    hub.mount('plugin')
-    
-    agent.modify_plugin('plugin', plugin_v2)
-    
-    expect(hub.get('plugin').version).to eq('2.0')
+
+  def test_supports_hot_reload
+    hub = RubyAgent::DocHub.new
+    plugin_v1 = RubyAgent::DocPlugin.new('plugin', path)
+    hub.mount(plugin_v1)
+
+    # 改写插件源文件后，watch 感知变化并重载；registry 反映新内容
+    rewrite_plugin_file(path, role: 'v2')
+    plugin_v1.watch(interval: 0.01)
+
+    assert_equal 'v2', hub['plugin'].registry.dig('solve', 'role')
   end
 end
 ```
@@ -327,9 +347,9 @@ end
 
 ## 下一步行动
 
-1. **立即执行**：Sprint 2 —— DocHub 多版本并行（`register` / `mount(name, version:)`），
-   并为「新旧版本并行验证」补 TDD 用例
+1. **当前焦点**：Sprint 2 —— DocHub 多版本并行（`register` / `get(name, version:)`），
+   为「新旧版本并行验证」补 TDD 用例（现有 `mount` / `[]` 已支持单版本读写分离）
 2. **每日站会**：检查测试通过率（当前 `rake ruby_agent:test` 全绿：29 runs / 53 assertions）
 3. **Sprint 评审**：每个 Sprint 末演示可运行版本
-4. **持续集成**：push 即触发测试（注：当前目录尚未初始化 git，建议先 `git init`）
+4. **持续集成**：push 即触发测试（仓库已 `git init` 并完成首次提交 `1d59620`）
 5. **测试纪律**：任何声称修复某缺口的用例，都必须能通过一次变异验证把它弄红

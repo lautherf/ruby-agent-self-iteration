@@ -1,19 +1,25 @@
 # 初始化测试文件模板
 
-RSpec.describe EXAMPLE_CLASS do
-  subject(:instance) { EXAMPLE_CLASS.new }
+```ruby
+# frozen_string_literal: true
 
-  describe '#example_method' do
-    context 'when condition_a' do
-      it 'should return expected_value' do
-        expect(instance.example_method).to eq(:expected_value)
-      end
-    end
+require_relative 'spec_helper'
 
-    context 'when condition_b' do
-      it 'should handle edge_case' do
-        expect { instance.example_method }.not_to raise_error
-      end
-    end
+class ExampleClassSpec < Minitest::Test
+  def setup
+    @instance = RubyAgent::ExampleClass.new
+  end
+
+  def test_example_method_returns_expected_value
+    assert_equal :expected_value, @instance.example_method
+  end
+
+  def test_example_method_handles_edge_case
+    @instance.example_method # 不抛异常即通过
+  end
+
+  def test_example_method_raises_on_bad_input
+    assert_raises(ArgumentError) { @instance.example_method(:bad) }
   end
 end
+```

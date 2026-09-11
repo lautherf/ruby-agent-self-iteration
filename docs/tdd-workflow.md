@@ -7,7 +7,7 @@
 # 1. 红（Red）
 #    - 先写测试，确认测试失败
 #    - 测试描述期望的行为
-#    - 使用应言API（assertion-based）
+#    - 使用断言式 API（assertion-based）
 #
 # 2. 绿（Green）
 #    - 编写最小可运行代码
@@ -28,5 +28,5 @@
 #
 # 命名规范：
 # - spec/model_name_spec.rb
-# - RSpec.describe ModelName 块
-# - 使用 it 'describes expected behavior' 格式
+# - class ModelNameSpec < Minitest::Test 块
+# - 使用 test_describes_expected_behavior 方法名

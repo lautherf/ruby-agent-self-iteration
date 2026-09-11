@@ -18,7 +18,7 @@
 ### 待完成 ⏳
 - [x] ~~安装依赖 (`bundle install`)~~ → 实测沙箱无 bundler；核心组件**零运行时依赖**，改用纯 minitest
 - [x] 运行初始测试 (`rake ruby_agent:test`) —— 29 runs / 53 assertions / 0 failures / 1 skip
-- [ ] 初始化 Git 仓库（当前目录尚未 `git init`，无法追踪变更）
+- [x] 初始化 Git 仓库 —— 已完成 `git init`，首次提交 `1d59620`（21 文件 / 2265 行）
 - [ ] 配置 CI/CD（可选）
 
 ---
@@ -179,6 +179,6 @@
 
 1. ~~安装依赖~~ → 已核查：无需 bundler（核心组件零运行时依赖）
 2. ~~验证环境~~ → ✅ `rake ruby_agent:test` 全绿（29 runs / 53 assertions）
-3. **立即**：`git init` 并完成首次提交
+3. ~~`git init` 并完成首次提交~~ → ✅ 已完成（commit `1d59620`）
 4. **下一步**：Sprint 2 —— DocHub 多版本并行 + 「新旧版本并行验证」用例
 5. **持续**：每日站会检查进度；任何缺口修复用例须通过一次变异验证方能算数
