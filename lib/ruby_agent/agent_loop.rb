@@ -41,7 +41,7 @@ PROMPT
       'verify' => '在内存作用域真实运行方法并比对期望值，参数：{"plugin":"插件名","method":"方法名","args":[..],"expected":期望值}。验证失败且之前有 apply_code 时，系统会自动回滚该修改。',
       'teach' => '写回插件方法的 @doc 元数据，参数：{"plugin":"插件名","method":"方法名","role":"..","note":".."}',
       'learn' => '把经验沉淀进知识仓库，参数：{"lesson":"经验文本","tags":"可选标签"}',
-      'remember' => '把一条对话写进记忆（对话即代码），参数：{"who":"user 或 ra","note":"内容","tags":"可选标签"}',
+      'remember' => '把一条对话写进记忆（记忆=结构化数据，经本体论校验），参数：{"kind":"fact|preference|event|meta，可选，默认 fact","who":"user 或 ra","note":"内容","tags":"可选标签"}',
       'read_memory' => '按内容召回记忆中的对话，参数：{"query":"关键词，可空","limit":"条数，默认 5"}'
     }.freeze
 
@@ -209,6 +209,10 @@ PROMPT
       docs = @hub.for_llm
       unless docs.empty?
         parts << "可用文档插件：\n#{docs.map { |doc| format_doc(doc) }.join("\n")}"
+      end
+      if @memory
+        mem = @memory.for_llm
+        parts << "记忆（ra 的对话流水与经验，可直接引用）:\n#{mem}" unless mem.empty?
       end
       parts.join("\n\n")
     end
@@ -421,13 +425,13 @@ PROMPT
         input = {} if input.nil?
         who = (input['who'] || input[:who] || 'ra').to_s
         note = (input['note'] || input[:note]).to_s.strip
+        kind = (input['kind'] || input[:kind] || 'fact').to_s
         raise '记忆内容不能为空' if note.empty?
-        tags = normalize_tags(input['tags'] || input[:tags])
-        id = @memory.add_turn(who: who, note: note, tags: tags)
+        id = @memory.add_turn(who: who, note: note, tags: (input['tags'] || input[:tags]), kind: kind)
         raise '记忆未落盘' unless id
-        record = { id: id, who: who, note: note, tags: tags }
+        record = { id: id, kind: kind, who: who, note: note, tags: normalize_tags(input['tags'] || input[:tags]) }
         emit(:remember, **record)
-        "已写入记忆 #{id}"
+        "已写入记忆 #{id}（#{kind}）"
       end
 
       register_tool('read_memory') do |input|
@@ -440,11 +444,11 @@ PROMPT
       end
     end
 
-    # run 结束后自动沉淀一条本次对话（记忆即代码：任务 → ra 的答复）
+    # run 结束后自动沉淀一条本次对话（任务 → ra 的答复，压平成单行便于召回）
     def record_active_turn(task)
       note = "#{task} → #{@state.answer || @state.error || '未完成'}"
-      note = note.gsub(/\s+/, ' ').strip            # 注释契约禁换行：压平后再写
-      @memory.add_turn(who: 'ra', note: note[0, 500], tags: 'auto')
+      note = note.gsub(/\s+/, ' ').strip[0, 500]
+      @memory.add_turn(who: 'ra', note: note, tags: 'auto', kind: 'event')
     rescue StandardError
       nil
     end

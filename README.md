@@ -28,7 +28,7 @@ rake ruby_agent:test:verbose
 
 ## 当前状态（2026-09-11）
 
-Sprint 7 交付完成（**记忆即代码**）：记忆是可执行的真代码——每条记忆 = 一个 `def`，**方法体就是记忆内容**，`# @doc` 只放元数据（who/since/tags），求值 memory.rb 就能读回整份记忆（磁盘零重复、可编译、可回滚、可 git diff、可遗忘）。自动沉淀 + remember 显式记忆 + read_memory 召回 + 每轮折叠成经验。引擎层兼容真模型"一条回复塞多个 Action"的毛病（全部按序执行再认 Final）。**17 个 spec / 151 runs / 472 assertions 全绿**，真模型跨会话记忆实测通过。
+Sprint 7 交付完成（**记忆=结构化数据**）：记忆是纯结构化数据文件（YAML），Ruby 代码只负责"本体论（Memory::SCHEMA: kinds/fields/必填项）+ 契约校验 + 原子落盘"，不再把内容伪装成方法体。自动沉淀 + remember 显式记忆 + read_memory 召回（空格分词） + 每轮折叠成经验。引擎层兼容真模型"一条回复塞多个 Action"的毛病（全部按序执行再认 Final）。**17 个 spec / 151 runs / 472 assertions 全绿**，真模型跨会话记忆实测通过。
 （成功标准 1–6 全部闭环；代码改坏了自动回滚；ra 身份契约自明；记忆可编译可遗忘）：
 > 基线：Sprint 5 终点 100 runs / 264 assertions → sprint6 119 → 真实模型适配 126 → 内化四则 130 → 记忆 145 runs。
 
@@ -42,7 +42,7 @@ Sprint 7 交付完成（**记忆即代码**）：记忆是可执行的真代码�
 | 循环层 | `lib/ruby_agent/agent_loop.rb` | ReAct 循环：`run` / 工具注册（含 `whoami`）/ 事件系统 / 状态同步 |
 | 供应商 | `lib/ruby_agent/deepseek_adapter.rb` | DeepSeek Chat Completions + SSE 流式 + 错误分级与重试 |
 | 沉淀层 | `lib/ruby_agent/knowledge.rb` | 经验仓库：`add` / `lessons` / `load!`（doc 契约持久化，去重 + 原子落盘 + 线程安全） |
-| 记忆层 | `lib/ruby_agent/memory.rb` | **记忆即代码**：`turn`/`lesson` 双通道存根 + `recall` + `consolidate!`（自动沉淀 / 显式记忆 / 折叠遗忘） |
+| 记忆层 | `lib/ruby_agent/memory.rb` | **记忆=结构化数据**：本体论 SCHEMA（kinds/field/校验）+ YAML 存取 + `recall`（分词）+ `consolidate!`（自动沉淀/显式记忆/折叠遗忘） |
 | 闭环层 | `lib/ruby_agent/iteration.rb` | `IterationLoop`：多轮执行 → reflect 沉淀 → 下轮注入（含记忆折叠） |
 | 代码层 | `lib/ruby_agent/code_editor.rb` | 代码级编辑：单方法替换 / 试编译 / 原子落盘 / 快照栈回滚 / 作用域隔离 |
 
@@ -70,7 +70,7 @@ ruby-agent-self-iteration/
 │   ├── run_agnes.rb              # 真实模型（Agnes/OpenAI 兼容）端到端自改闭环
 │   ├── ask_ra.rb                 # 真实模型问 ra：你是谁（身份契约自明）
 │   ├── internalize_math.rb       # 真实模型让 ra 把小学数学内化进自己
-│   ├── memory_demo.rb            # 离线演示「记忆即代码」：对话=可编译的 Ruby 文件
+│   ├── memory_demo.rb            # 离线演示记忆层：YAML 结构化数据 + recall + 折叠
 │   └── test_memory.rb            # 真模型跨会话记忆测试：A 会话记住，B 会话 read_memory 回忆
 ├── plugins/
 │   └── ra.rb                     # ra 身份契约：我是谁 / 我学过什么 / 我不能做什么
@@ -86,7 +86,7 @@ ruby-agent-self-iteration/
 │       ├── agent_loop.rb         # ReAct Agent 循环（含 read_code / apply_code / verify）
 │       ├── deepseek_adapter.rb   # DeepSeek 供应商实现
 │       ├── knowledge.rb          # 经验仓库：沉淀 / 去重 / 原子落盘
-│       ├── memory.rb             # 记忆即代码：turn/lesson 存根 + recall + 折叠
+│       ├── memory.rb             # 记忆=结构化数据：本体论 SCHEMA + YAML + recall + 折叠
 │       ├── iteration.rb          # 迭代闭环：多轮执行 + 沉淀 + 反馈
 │       └── code_editor.rb        # 代码级编辑：替换 / 试编译 / 回滚 / 作用域隔离
 ├── spec/
@@ -105,8 +105,8 @@ ruby-agent-self-iteration/
 │   ├── iteration_spec.rb         # 闭环层：跨轮注入 / reflect / 自学回收
 │   ├── code_editor_spec.rb       # 代码层：定位 / 替换 / 回滚 / 作用域
 │   ├── code_loop_spec.rb         # 代码闭环：apply → verify → 自动回滚 → 重试
-│   ├── memory_spec.rb            # 记忆层：turn/lesson 双通道 / recall / 折叠 / 并发
-│   ├── memory_loop_spec.rb       # 记忆闭环：remember / 自动沉淀 / 迭代注入与折叠
+│   ├── memory_spec.rb            # 记忆层：本体论校验 / 双通道 / recall / 折叠 / 并发
+│   ├── memory_loop_spec.rb       # 记忆闭环：remember / 自动沉淀 / 注入与折叠
 │   └── ra_spec.rb                # ra 自明：身份契约 / mount_ra / whoami
 └── plugins/
     └── ra.rb                     # ra 身份契约（自我认知的唯一来源）

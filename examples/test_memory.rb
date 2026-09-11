@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# 「记忆即代码」真模型端到端测试：
+# 跨会话记忆端到端测试：记忆 = 结构化数据文件（YAML），不再挂 DocPlugin。
 #   会话 A：ra 用 remember 把 3 件关于用户的事写进记忆
 #   会话 B：全新 Agent（无对话上下文，只共享同一个 memory 文件）read_memory 回忆
 # 若 B 答出这 3 件事 → 跨会话对话记忆成立。
@@ -18,12 +18,11 @@ key      = ENV['AGNES_API_KEY'] or abort '缺少 AGNES_API_KEY'
 dir = File.join(__dir__, 'memory_test')
 FileUtils.rm_rf(dir)
 FileUtils.mkdir_p(dir)
-path = File.join(dir, 'memory.rb')
+path = File.join(dir, 'memory.yaml')
 
 memory = RubyAgent::Memory.new(path)
 hub = RubyAgent::DocHub.new
 RubyAgent.mount_ra!(hub)
-hub.mount(memory.plugin.load!)
 
 def new_agent(hub, key, base_url, model, memory)
   llm = RubyAgent::DeepSeekAdapter.new(base_url: base_url, api_key: key, model: model)
@@ -31,7 +30,7 @@ def new_agent(hub, key, base_url, model, memory)
   agent.on(:llm_response) { |e| puts "\n── 回复 (#{e[:index]}):\n#{e[:content]}" }
   agent.on(:tool_call)    { |e| puts "→ 工具: #{e[:tool]} #{e[:input]}" }
   agent.on(:observation)  { |e| puts "  观察: #{e[:observation]}" }
-  agent.on(:remember)     { |e| puts "  ★ 记住: #{e[:id]}[#{e[:who]}] #{e[:note]}" }
+  agent.on(:remember)     { |e| puts "  ★ 记住: #{e[:id]}[#{e[:kind]}] #{e[:note]}" }
   agent
 end
 
@@ -51,7 +50,7 @@ puts "\n======== 记忆文件（记忆即代码）========\n"
 puts File.read(path)
 
 puts "\n======== 会话 B：全新 Agent，无对话上下文，只能靠 read_memory ========"
-memory.plugin.load!  # 让 B 读到 A 写下的记忆
+memory.load!  # 让 B 读到 A 写下的记忆（同一对象，磁盘已同步）
 agent_b = new_agent(hub, key, base_url, model, memory)
 answer_b = agent_b.run(<<~TASK)
   这是新的对话，你没有刚才的对话上下文。请先调用 read_memory 查你的记忆，

@@ -9,7 +9,7 @@ class MemoryLoopSpec < Minitest::Test
   include PluginFixture
 
   def build_memory
-    Dir.mktmpdir('memy') { |dir| yield RubyAgent::Memory.new(File.join(dir, 'memory.rb')) }
+    Dir.mktmpdir('memy') { |dir| yield RubyAgent::Memory.new(File.join(dir, 'memory.yaml')) }
   end
 
   def test_remember_tool_writes_turn_and_emits_event
@@ -19,10 +19,11 @@ class MemoryLoopSpec < Minitest::Test
       captured = []
       agent.on(:remember) { |e| captured << e }
 
-      text = agent.invoke_tool('remember', { 'who' => 'user', 'note' => '记住我喜欢 Ruby', 'tags' => 'pref' })
+      text = agent.invoke_tool('remember', { 'who' => 'user', 'note' => '记住我喜欢 Ruby', 'tags' => 'pref', 'kind' => 'preference' })
 
       assert_includes text, 'turn_001'
       assert_equal ['记住我喜欢 Ruby'], memory.load!.turns.map { |t| t[:note] }
+      assert_equal ['preference'], memory.load!.turns.map { |t| t[:kind] }
       assert_equal 1, captured.size
       assert_equal :remember, captured.first[:type]
     end
@@ -78,7 +79,7 @@ class MemoryLoopSpec < Minitest::Test
       refute_nil turn, '多行任务也必须能写入记忆'
       refute_includes turn[:note], "\n", '自动沉淀把多行任务压平成单行，便于召回'
       assert_includes turn[:note], '第一行'
-      assert RubyVM::InstructionSequence.compile(File.read(memory.path))
+      assert YAML.safe_load(File.read(memory.path), permitted_classes: [Symbol], aliases: false)
     end
   end
 
@@ -90,7 +91,7 @@ class MemoryLoopSpec < Minitest::Test
       agent.invoke_tool('remember', { 'who' => 'user', 'note' => '风格偏好', 'tags' => ['style', 'pref'] })
 
       turn = memory.load!.turns.first
-      assert_equal 'style,pref', turn[:tags], '数组 tags 应归一化为逗号分隔字符串'
+      assert_equal %w[style pref], turn[:tags], '标签以数组落盘（结构化数据），归一化去重'
     end
   end
 
@@ -108,17 +109,16 @@ class MemoryLoopSpec < Minitest::Test
     end
   end
 
-  def test_memory_plugin_mount_injects_turns_into_system_prompt
+  def test_memory_injects_turns_into_system_prompt_directly
     build_memory do |memory|
       memory.add_turn(who: 'user', note: '记忆注入验证', tags: 't')
       hub = RubyAgent::DocHub.new
-      hub.mount(memory.plugin.load!)
-      agent = RubyAgent::AgentLoop.new(hub: hub, llm: RubyAgent::MockLLM.new(['Final Answer: ok']))
+      agent = RubyAgent::AgentLoop.new(hub: hub, llm: RubyAgent::MockLLM.new(['Final Answer: ok']), memory: memory)
 
       agent.run('你是谁')
 
       system = agent.llm.calls.first[:messages].find { |m| m[:role] == 'system' }[:content]
-      assert_includes system, '记忆注入验证', '记忆经 for_llm 注入 system prompt'
+      assert_includes system, '记忆注入验证', '记忆直接从 Memory#for_llm 注入 system prompt，不再经 DocPlugin'
     end
   end
 
@@ -142,7 +142,6 @@ class MemoryLoopSpec < Minitest::Test
 
       assert_equal 2, memory.turns.size, '老对话被折叠，只留最近窗口'
       assert_includes memory.lessons.map { |l| l[:note] }.join, '折叠了 3 条旧对话'
-      assert hub.get('memory'), '记忆必须挂载进 DocHub'
     end
   end
 

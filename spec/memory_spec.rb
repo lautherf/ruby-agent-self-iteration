@@ -2,65 +2,48 @@
 
 require_relative 'spec_helper'
 
-# Memory —— 「记忆即代码」（Sprint 7 设计契约）。
+# Memory —— 记忆 = 结构化数据文件 + 简单读写；本体论在代码里（Memory::SCHEMA）。
 #
-# 愿景：记忆不是数据库里的行，而是 Ruby 文件里的存根方法与 `# @doc` 注释契约，
-# 与 lessons 同构、可编译、可回滚、可 git diff、可遗忘（删存根 / 折叠成 lesson）。
-# 双通道：turn_XXX = 原始对话流水；lesson_XXX = 折叠后的压缩经验。
+#   memory.yaml：纯数据，两表（turns 原始对话 / lessons 折叠经验）。
+#   Memory 类：本体论（kinds / fields / 必填项）→ 契约校验 → 原子落盘（写后读回自检）。
+# 不再有"方法体装内容"的把戏：内容就是数据，代码只管它是不是合法、落得稳不稳。
 class MemorySpec < Minitest::Test
   include PluginFixture
 
   def with_memory
     Dir.mktmpdir('mem') do |dir|
-      path = File.join(dir, 'memory.rb')
+      path = File.join(dir, 'memory.yaml')
       yield RubyAgent::Memory.new(path), path
     end
   end
 
-  def test_empty_memory_is_header_code_that_compiles
+  def test_empty_memory_is_valid_yaml_data
     with_memory do |mem, path|
       assert_empty mem.turns
       assert_empty mem.lessons
-      assert RubyVM::InstructionSequence.compile(File.read(path)), '空记忆也必须是一段可编译代码'
+
+      data = YAML.safe_load(File.read(path), permitted_classes: [Symbol], aliases: false)
+      assert_equal({ 'turns' => [], 'lessons' => [] }, data, '空记忆 = 两张空表，合法 YAML')
     end
   end
 
-  def test_add_turn_writes_note_as_real_method_body
+  def test_add_turn_writes_structured_data_not_methods
     with_memory do |mem, path|
-      id = mem.add_turn(who: 'user', note: '帮我把小学数学内化进你自己', tags: 'math')
+      id = mem.add_turn(who: 'user', note: '项目名是 weixin', tags: '项目', kind: 'fact')
 
       assert_equal 'turn_001', id
       src = File.read(path)
-      assert_includes src, '# @doc who: user'
-      assert_includes src, "# @doc since:"
-      assert_includes src, '# @doc tags: math'
-      refute_includes src, '# @doc note:', 'note 是方法体，不得在注释里重复一份'
-      assert_includes src, "def turn_001\n  \"帮我把小学数学内化进你自己\"\nend"
-      assert RubyVM::InstructionSequence.compile(src)
-    end
-  end
+      refute_includes src, 'def turn_001', '内容不得伪装成方法体'
+      refute_includes src, '@doc', '不再用注释契约装记忆'
 
-  def test_memory_file_is_evaluable_and_returns_payload
-    with_memory do |mem, path|
-      mem.add_turn(who: 'user', note: '项目名是 weixin', tags: 'math')
-      mem.add_lesson('折叠了 3 条旧对话')
-
-      bodies = RubyAgent::Memory.eval_bodies(path)
-      assert_equal '项目名是 weixin', bodies['turn_001'], '记忆=代码：求值方法体就能读回记忆'
-      assert_equal '折叠了 3 条旧对话', bodies['lesson_001']
-    end
-  end
-
-  def test_multiline_note_round_trips_safely
-    with_memory do |mem, path|
-      id = mem.add_turn(who: 'ra', note: "第一步：apply_code\n第二步：验证")
-
-      assert_equal 'turn_001', id
-      assert_includes mem.turns.first[:note], "\n", '多行内容也该原样读回'
-      assert RubyVM::InstructionSequence.compile(File.read(path))
-      src = File.read(path)
-      refute_includes src, "# @doc note:", 'note 不应进注释层'
-      assert_equal 1, src.lines.count { |l| l.include?('第一步') }, 'inspect 转义后仍是一行物理代码'
+      data = YAML.safe_load(src, permitted_classes: [Symbol], aliases: false)
+      first = data['turns'].first
+      assert_equal 'turn_001', first['id']
+      assert_equal 'user', first['who']
+      assert_equal '项目名是 weixin', first['note']
+      assert_equal ['项目'], first['tags']
+      assert_equal 'fact', first['kind']
+      assert first['since']
     end
   end
 
@@ -76,6 +59,34 @@ class MemorySpec < Minitest::Test
     end
   end
 
+  def test_ontology_rejects_bad_kind_bad_who_empty_note
+    with_memory do |mem, _path|
+      assert_equal false, mem.add_turn(who: 'user', note: 'x', kind: 'bogus'), '非法 kind 必须拒绝'
+      assert_equal false, mem.add_turn(who: 'user', note: '   '), '空 note 必须拒绝'
+      assert_equal 0, mem.turns.size, '毒记忆不得落盘'
+    end
+  end
+
+  def test_ontology_accepts_preference_and_meta_kinds
+    with_memory do |mem, _path|
+      assert mem.add_turn(who: 'user', note: '喜欢蓝色', kind: 'preference')
+      assert mem.add_turn(who: 'ra', note: '我反思了这次迭代', kind: 'meta')
+      assert_equal %w[preference meta], mem.turns.map { |t| t[:kind] }
+    end
+  end
+
+  def test_lessons_channel_independent
+    with_memory do |mem, _path|
+      mem.add_turn(who: 'user', note: '过程对话', tags: 'chat')
+      mem.add_lesson('任务完成：预留 lesson 通道', tags: 'done')
+
+      assert_equal 1, mem.turns.size
+      assert_equal 1, mem.lessons.size
+      assert_equal ['任务完成：预留 lesson 通道'], mem.lessons.map { |l| l[:note] }
+      assert_equal 'lesson', mem.lessons.first[:kind]
+    end
+  end
+
   def test_recall_returns_newest_first_and_filters_by_query
     with_memory do |mem, _path|
       mem.add_turn(who: 'user', note: '讲讲数学', tags: 'math')
@@ -88,21 +99,9 @@ class MemorySpec < Minitest::Test
       assert_equal 2, mem.recall(query: '数学', limit: 10).size
       assert_equal 1, mem.recall(query: '聊聊 Ruby', limit: 10).size
 
-      multi = mem.recall(query: '数学 Ruby', limit: 10)
-      assert_equal 3, multi.size, '空格分词：命中任意词即召回'
+      assert_equal 3, mem.recall(query: '数学 Ruby', limit: 10).size, '空格分词：命中任意词即召回'
       assert_equal ['数学已经内化', '聊聊 Ruby'],
                    mem.recall(query: '数学 聊聊', limit: 2).map { |t| t[:note] }, '多词查询按最近排序'
-    end
-  end
-
-  def test_lessons_channel_independent
-    with_memory do |mem, _path|
-      mem.add_turn(who: 'user', note: '过程对话', tags: 'chat')
-      mem.add_lesson('任务完成：预留 lesson 通道', tags: 'done')
-
-      assert_equal 1, mem.turns.size
-      assert_equal 1, mem.lessons.size
-      assert_equal ['任务完成：预留 lesson 通道'], mem.lessons.map { |l| l[:note] }
     end
   end
 
@@ -115,7 +114,19 @@ class MemorySpec < Minitest::Test
       assert_equal 'lesson_001', summary_id
       assert_equal ['闲聊 4', '闲聊 5'], mem.turns.map { |t| t[:note] }, '只保留最近 2 条原始对话'
       assert_equal ['已压缩 4 条闲聊'], mem.lessons.map { |l| l[:note] }
-      assert RubyVM::InstructionSequence.compile(File.read(path)), '折叠必须是合法代码'
+
+      data = YAML.safe_load(File.read(path), permitted_classes: [Symbol], aliases: false)
+      assert_equal 2, data['turns'].size
+      assert_equal 1, data['lessons'].size, '折叠后必须是合法 YAML 数据'
+    end
+  end
+
+  def test_consolidate_id_continues_increasing_after_fold
+    with_memory do |mem, _path|
+      6.times { |i| mem.add_turn(who: 'user', note: "闲聊 #{i}") }
+      mem.consolidate!(keep: 2) { |b| "压 #{b.size}" }
+      assert_equal 'turn_007', mem.add_turn(who: 'user', note: '折叠后的新对话'),
+                   'next_id 取最大编号+1，不回退不重复'
     end
   end
 
@@ -139,15 +150,22 @@ class MemorySpec < Minitest::Test
 
   def test_concurrent_turns_never_lose_updates
     with_memory do |mem, path|
-      threads = 8.times.map do |i|
-        Thread.new { mem.add_turn(who: 'user', note: "并发 #{i}", tags: 't') }
-      end
+      threads = 8.times.map { |i| Thread.new { mem.add_turn(who: 'user', note: "并发 #{i}", tags: 't') } }
       threads.each(&:join)
 
       mem.load!
       assert_equal 8, mem.turns.size
       assert_equal 8, mem.turns.map { |t| t[:id] }.uniq.size
-      assert RubyVM::InstructionSequence.compile(File.read(path))
+      YAML.safe_load(File.read(path), permitted_classes: [Symbol], aliases: false)
+    end
+  end
+
+  def test_multiline_note_round_trips_safely
+    with_memory do |mem, path|
+      mem.add_turn(who: 'ra', note: "第一步：apply_code\n第二步：验证")
+
+      assert_includes mem.turns.first[:note], "\n", '结构化数据天然支持多行'
+      YAML.safe_load(File.read(path), permitted_classes: [Symbol], aliases: false)
     end
   end
 end
