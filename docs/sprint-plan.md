@@ -225,7 +225,52 @@ hub.mount('my_plugin', version: '1.0')  # 挂载指定版本
 
 ---
 
-## Sprint 3：动态修改能力（第 4 周）
+## Sprint 3：动态修改能力（第 4 周）✅ 已完成 2026-09-11
+
+### 目标
+- 实现 DynamicMethodsModule
+- 支持方法级回滚
+- 验证 Refinements 作用域控制
+
+### 已落地（v0.3 · 动态方法覆盖 + 回滚）
+
+**接口**：
+```ruby
+klass.extend(RubyAgent::DynamicMethodsModule)
+
+# 实例方法覆盖
+klass.dynamic_method(:foo) { 'new' }
+klass.rollback!          # 恢复所有动态实例方法
+
+# 类方法覆盖
+klass.dynamic_class_method(:bar) { 'class_new' }
+klass.rollback!          # 同时恢复类方法
+```
+
+**对应测试**：`spec/dynamic_methods_spec.rb`（6 用例，全绿）
+
+| 交付物 | 文件 | 状态 |
+|--------|------|------|
+| DynamicMethodsModule（方法覆盖 + 回滚） | `lib/ruby_agent/dynamic_methods.rb` | ✅ |
+| 实例方法动态覆盖 | `dynamic_method` | ✅ |
+| 类方法动态覆盖 | `dynamic_class_method` | ✅ |
+| 批量回滚（实例 + 类） | `rollback!` | ✅ |
+| 回滚幂等性 | 多次调用不报错 | ✅ |
+| 回归测试（6 用例） | `spec/dynamic_methods_spec.rb` | ✅ 全绿 |
+
+**测试结果**：
+```
+spec/dynamic_methods_spec.rb: 6 runs, 11 assertions, 0 failures
+全量测试: 46 runs, 92 assertions, 0 failures, 1 skip
+```
+
+### 新增文件
+- `lib/ruby_agent/dynamic_methods.rb` ✅ 已落地
+- `spec/dynamic_methods_spec.rb` ✅ 已落地（6 用例）
+
+---
+
+## Sprint 3 阶段 2：Refinements 作用域（待实现）
 
 ### 目标
 - 实现 DynamicMethodsModule

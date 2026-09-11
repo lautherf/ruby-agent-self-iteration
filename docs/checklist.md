@@ -75,17 +75,19 @@
 
 ---
 
-## Sprint 3：动态修改能力（第 4 周）
+## Sprint 3：动态修改能力（第 4 周）✅ 已完成 2026-09-11
 
 ### 测试驱动开发
 
 #### 阶段 1：方法修改
-- [ ] `spec/dynamic_methods_spec.rb`
-- [ ] 测试方法重写
-- [ ] 测试回滚机制
-- [ ] 测试异常隔离
+- [x] `spec/dynamic_methods_spec.rb`（6 用例，全绿）
+- [x] 测试方法重写
+- [x] 测试回滚机制
+- [x] 测试多次回滚幂等
+- [x] 测试类方法回滚
+- [x] 实现 `lib/ruby_agent/dynamic_methods.rb`（DynamicMethodsModule）
 
-#### 阶段 2：Refinements 作用域
+#### 阶段 2：Refinements 作用域（待实现）
 - [ ] 测试作用域隔离
 - [ ] 测试多层嵌套
 - [ ] 测试清理机制
