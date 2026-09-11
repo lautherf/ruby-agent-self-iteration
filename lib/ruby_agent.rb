@@ -10,6 +10,7 @@ require_relative 'ruby_agent/code_editor'
 require_relative 'ruby_agent/agent_loop'
 require_relative 'ruby_agent/deepseek_adapter'
 require_relative 'ruby_agent/knowledge'
+require_relative 'ruby_agent/memory'
 require_relative 'ruby_agent/iteration'
 
 module RubyAgent

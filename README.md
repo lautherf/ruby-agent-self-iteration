@@ -28,9 +28,9 @@ rake ruby_agent:test:verbose
 
 ## 当前状态（2026-09-11）
 
-Sprint 6 交付完成，**代码级自修改闭环端到端可运行**。**15 个 spec / 126 runs / 363 assertions 全绿**
-（成功标准 1–6 全部闭环；代码改坏了自动回滚；ra 身份契约自明）：
-> 基线：Sprint 5 终点 100 runs / 264 assertions → 至 ra 自明 119 runs → 真实模型适配 126 runs。
+Sprint 7 交付完成（**记忆即代码**）：对话记忆 = Ruby 存根方法 + `# @doc` 契约，自动沉淀 + remember 显式记忆 + read_memory 召回 + 每轮折叠成经验。**17 个 spec / 145 runs / 441 assertions 全绿**
+（成功标准 1–6 全部闭环；代码改坏了自动回滚；ra 身份契约自明；记忆可编译可遗忘）：
+> 基线：Sprint 5 终点 100 runs / 264 assertions → sprint6 119 → 真实模型适配 126 → 内化四则 130 → 记忆 145 runs。
 
 | 层 | 文件 | 职责 |
 |----|------|------|
@@ -42,7 +42,8 @@ Sprint 6 交付完成，**代码级自修改闭环端到端可运行**。**15 �
 | 循环层 | `lib/ruby_agent/agent_loop.rb` | ReAct 循环：`run` / 工具注册（含 `whoami`）/ 事件系统 / 状态同步 |
 | 供应商 | `lib/ruby_agent/deepseek_adapter.rb` | DeepSeek Chat Completions + SSE 流式 + 错误分级与重试 |
 | 沉淀层 | `lib/ruby_agent/knowledge.rb` | 经验仓库：`add` / `lessons` / `load!`（doc 契约持久化，去重 + 原子落盘 + 线程安全） |
-| 闭环层 | `lib/ruby_agent/iteration.rb` | `IterationLoop`：多轮执行 → reflect 沉淀 → 下轮注入 |
+| 记忆层 | `lib/ruby_agent/memory.rb` | **记忆即代码**：`turn`/`lesson` 双通道存根 + `recall` + `consolidate!`（自动沉淀 / 显式记忆 / 折叠遗忘） |
+| 闭环层 | `lib/ruby_agent/iteration.rb` | `IterationLoop`：多轮执行 → reflect 沉淀 → 下轮注入（含记忆折叠） |
 | 代码层 | `lib/ruby_agent/code_editor.rb` | 代码级编辑：单方法替换 / 试编译 / 原子落盘 / 快照栈回滚 / 作用域隔离 |
 
 其中 `spec/regression_gaps_spec.rb` 用三条回归测试固化了参考 Demo 暴露的三个缺口——
@@ -67,7 +68,9 @@ ruby-agent-self-iteration/
 │   ├── iteration_closed_loop.rb  # 离线闭环演示（知识沉淀，Sprint 5）
 │   ├── code_self_modify.rb       # 离线自改演示（代码级回滚闭环，Sprint 6）
 │   ├── run_agnes.rb              # 真实模型（Agnes/OpenAI 兼容）端到端自改闭环
-│   └── ask_ra.rb                 # 真实模型问 ra：你是谁（身份契约自明）
+│   ├── ask_ra.rb                 # 真实模型问 ra：你是谁（身份契约自明）
+│   ├── internalize_math.rb       # 真实模型让 ra 把小学数学内化进自己
+│   └── memory_demo.rb            # 离线演示「记忆即代码」：对话=可编译的 Ruby 文件
 ├── plugins/
 │   └── ra.rb                     # ra 身份契约：我是谁 / 我学过什么 / 我不能做什么
 └── lib/
@@ -82,6 +85,7 @@ ruby-agent-self-iteration/
 │       ├── agent_loop.rb         # ReAct Agent 循环（含 read_code / apply_code / verify）
 │       ├── deepseek_adapter.rb   # DeepSeek 供应商实现
 │       ├── knowledge.rb          # 经验仓库：沉淀 / 去重 / 原子落盘
+│       ├── memory.rb             # 记忆即代码：turn/lesson 存根 + recall + 折叠
 │       ├── iteration.rb          # 迭代闭环：多轮执行 + 沉淀 + 反馈
 │       └── code_editor.rb        # 代码级编辑：替换 / 试编译 / 回滚 / 作用域隔离
 ├── spec/
@@ -100,6 +104,8 @@ ruby-agent-self-iteration/
 │   ├── iteration_spec.rb         # 闭环层：跨轮注入 / reflect / 自学回收
 │   ├── code_editor_spec.rb       # 代码层：定位 / 替换 / 回滚 / 作用域
 │   ├── code_loop_spec.rb         # 代码闭环：apply → verify → 自动回滚 → 重试
+│   ├── memory_spec.rb            # 记忆层：turn/lesson 双通道 / recall / 折叠 / 并发
+│   ├── memory_loop_spec.rb       # 记忆闭环：remember / 自动沉淀 / 迭代注入与折叠
 │   └── ra_spec.rb                # ra 自明：身份契约 / mount_ra / whoami
 └── plugins/
     └── ra.rb                     # ra 身份契约（自我认知的唯一来源）

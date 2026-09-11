@@ -3,6 +3,7 @@
 require 'json'
 require_relative 'llm_adapter'
 require_relative 'code_editor'
+require_relative 'memory'
 
 module RubyAgent
   # AgentLoop —— ReAct 循环：Thought → Action → Observation → … → Final Answer。
@@ -39,7 +40,9 @@ PROMPT
       'apply_code' => '把方法体整体替换为新代码；方法不存在时自动新增（追加到文件末尾），参数：{"plugin":"插件名","method":"方法名","code":"def 方法名(...)\\n实现\\nend"}。要求 code 定义同名方法，语法错会自动拒绝。',
       'verify' => '在内存作用域真实运行方法并比对期望值，参数：{"plugin":"插件名","method":"方法名","args":[..],"expected":期望值}。验证失败且之前有 apply_code 时，系统会自动回滚该修改。',
       'teach' => '写回插件方法的 @doc 元数据，参数：{"plugin":"插件名","method":"方法名","role":"..","note":".."}',
-      'learn' => '把经验沉淀进知识仓库，参数：{"lesson":"经验文本","tags":"可选标签"}'
+      'learn' => '把经验沉淀进知识仓库，参数：{"lesson":"经验文本","tags":"可选标签"}',
+      'remember' => '把一条对话写进记忆（对话即代码），参数：{"who":"user 或 ra","note":"内容","tags":"可选标签"}',
+      'read_memory' => '按内容召回记忆中的对话，参数：{"query":"关键词，可空","limit":"条数，默认 5"}'
     }.freeze
 
     # 运行状态快照
@@ -64,12 +67,13 @@ PROMPT
 
     attr_reader :hub, :llm, :state, :events, :tools
 
-    def initialize(hub:, llm:, max_steps: 8, system_prompt: DEFAULT_SYSTEM_PROMPT, knowledge: nil, auto_rollback: true)
+    def initialize(hub:, llm:, max_steps: 8, system_prompt: DEFAULT_SYSTEM_PROMPT, knowledge: nil, memory: nil, auto_rollback: true)
       @hub = hub
       @llm = llm
       @max_steps = max_steps
       @system_prompt = system_prompt
       @knowledge = knowledge
+      @memory = memory
       @auto_rollback = auto_rollback
       @tools = {}
       @events = []
@@ -79,6 +83,7 @@ PROMPT
       @pending_change = nil
       register_default_tools
       register_learn_tool if @knowledge
+      register_remember_memory_tools if @memory
     end
 
     # 注册工具：name => 接收解析后 input 的 block
@@ -136,6 +141,8 @@ PROMPT
       @state.error = "达到最大步数 #{@max_steps} 仍未给出 Final Answer"
       emit(:max_steps, error: @state.error)
       nil
+    ensure
+      record_active_turn(task) if @memory
     end
 
     # 直接调用工具（raw 返回值）；未注册时抛 UnknownToolError
@@ -357,6 +364,39 @@ PROMPT
           msg
         end
       end
+    end
+
+    # Sprint 7：显式记忆与自动沉淀 —— remember / read_memory + run 后自动记录。
+    def register_remember_memory_tools
+      register_tool('remember') do |input|
+        input = {} if input.nil?
+        who = (input['who'] || input[:who] || 'ra').to_s
+        note = (input['note'] || input[:note]).to_s.strip
+        raise '记忆内容不能为空' if note.empty?
+        tags = (input['tags'] || input[:tags]).to_s.strip
+        id = @memory.add_turn(who: who, note: note, tags: tags)
+        raise '记忆未落盘' unless id
+        record = { id: id, who: who, note: note, tags: tags }
+        emit(:remember, **record)
+        "已写入记忆 #{id}"
+      end
+
+      register_tool('read_memory') do |input|
+        input = {} if input.nil?
+        q   = (input['query'] || input[:query] || input['q']).to_s
+        lim = (input['limit'] || input[:limit] || 5).to_i
+        hits = @memory.recall(query: q, limit: lim)
+        next '（记忆为空）' if hits.empty?
+        hits.map { |t| "- #{t[:id]}[#{t[:who]}] #{t[:note]}" }.join("\n")
+      end
+    end
+
+    # run 结束后自动沉淀一条本次对话（记忆即代码：任务 → ra 的答复）
+    def record_active_turn(task)
+      note = "#{task} → #{@state.answer || @state.error || '未完成'}"
+      @memory.add_turn(who: 'ra', note: note[0, 500], tags: 'auto')
+    rescue StandardError
+      nil
     end
 
     # Sprint 5：learn 工具 —— Agent 把本次经验沉淀进 Knowledge 仓库。

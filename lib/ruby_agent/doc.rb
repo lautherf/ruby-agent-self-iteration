@@ -10,8 +10,8 @@ module RubyAgent
   module Doc
     DOC_LINE = /^\s*#\s*@doc\s+(\w+):\s*(.*)$/
 
-    # 允许写入的注释键白名单（缺口 2 修复）
-    ALLOWED_KEYS = %w[role note example syntax params returns since deprecated tags motto].freeze
+    # 允许写入的注释键白名单（缺口 2 修复；Sprint 7 加入 who=对话发言人）
+    ALLOWED_KEYS = %w[role note example syntax params returns since deprecated tags motto who].freeze
 
     # 单条注释值长度上限（缺口 2 修复）
     MAX_VALUE_LEN = 500

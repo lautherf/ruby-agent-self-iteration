@@ -3,6 +3,7 @@
 require 'fileutils'
 require_relative 'agent_loop'
 require_relative 'knowledge'
+require_relative 'memory'
 
 module RubyAgent
   # IterationLoop —— 迭代闭环编排（Sprint 5 闭环验证）。
@@ -12,7 +13,7 @@ module RubyAgent
   #   task → AgentLoop(fresh) → 任务完成 → reflect 出经验 → Knowledge 沉淀
   #        → 下一轮 Agent 的 system prompt 已包含上一轮知识（经 DocHub for_llm）
   #
-  # 职责分离：AgentLoop 只负责"执行一个任务"；IterationLoop 负责"多轮执行 + 沉淀 + 反馈"。
+  # Sprint 7 新增：每轮把老对话折叠成 lesson（记忆即代码，遗忘=重构）。
   class IterationLoop
     # 单轮结果快照
     Result = Struct.new(:index, :task, :answer, :status, keyword_init: true)
@@ -22,21 +23,28 @@ module RubyAgent
       Array(state.respond_to?(:learned) ? state.learned : [])
     }
 
-    attr_reader :hub, :knowledge, :results, :agents
+    # 缺省折叠：确定性摘要，不调用 LLM；传 summarize: 可换真实模型
+    DEFAULT_SUMMARIZE = Memory::DEFAULT_SUMMARIZE
 
-    # builder: 无参可调用，返回一个绑定好 hub/llm/knowledge 的全新 AgentLoop
+    attr_reader :hub, :knowledge, :memory, :results, :agents
+
+    # builder: 无参可调用，返回一个绑定好 hub/llm/knowledge/memory 的全新 AgentLoop
     # reflect: 可调用(agent.state) -> [{ lesson:, tags:, }]；缺省用 Agent 自学的经验
-    def initialize(hub:, builder:, knowledge:, reflect: DEFAULT_REFLECT)
+    def initialize(hub:, builder:, knowledge:, memory: nil, memory_keep: 5, summarize: DEFAULT_SUMMARIZE, reflect: DEFAULT_REFLECT)
       @hub = hub
       @builder = builder
       @knowledge = knowledge
+      @memory = memory
+      @memory_keep = memory_keep
+      @summarize = summarize
       @reflect = reflect || DEFAULT_REFLECT
       @results = []
       @agents = []
       mount_knowledge
+      mount_memory if @memory
     end
 
-    # 顺序执行多个任务；每轮结束沉淀经验，下一轮自动读到上一轮知识。
+    # 顺序执行多个任务；每轮结束沉淀经验 + 折叠旧对话，下一轮自动读到上一轮知识。
     def run(tasks)
       Array(tasks).each_with_index do |task, index|
         agent = @builder.call
@@ -45,6 +53,7 @@ module RubyAgent
 
         sediment(agent.state)
         reload_knowledge_plugin
+        consolidate_memory
 
         @results << Result.new(
           index: index, task: task,
@@ -67,6 +76,13 @@ module RubyAgent
       @hub.mount(DocPlugin.new(Knowledge::NAME, @knowledge.path).load!)
     end
 
+    # Sprint 7：把 Memory 挂进 DocHub，记忆经 for_llm 注入下一轮 system prompt。
+    def mount_memory
+      return if @hub.get(Memory::NAME)
+
+      @hub.mount(@memory.plugin.load!)
+    end
+
     def sediment(state)
       Array(@reflect.call(state)).each do |item|
         next unless item && !item[:lesson].to_s.strip.empty?
@@ -77,6 +93,18 @@ module RubyAgent
 
     def reload_knowledge_plugin
       @hub.get(Knowledge::NAME)&.load!
+    end
+
+    # Sprint 7：每轮结束折叠窗口外的旧对话（遗忘 = 重构），并刷新插件以进入下一轮 prompt。
+    def consolidate_memory
+      return unless @memory
+
+      @memory.consolidate!(keep: @memory_keep, &@summarize)
+      reload_memory_plugin
+    end
+
+    def reload_memory_plugin
+      @hub.get(Memory::NAME)&.load!
     end
   end
 end
