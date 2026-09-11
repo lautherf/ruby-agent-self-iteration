@@ -1,0 +1,221 @@
+# Ruby Agent 自我迭代框架
+
+> **项目愿景**：让 LLM Agent 在 Ruby 生态里安全地修改自己，最坏情况只是"这次没生效"，而不是"系统崩了"。
+
+## 快速开始
+
+```bash
+cd ruby-agent-self-iteration
+
+# 核心组件零运行时依赖，无需 bundler
+rake ruby_agent:test
+
+# 或直接跑单个测试文件
+ruby -Ilib -Ispec spec/doc_spec.rb
+ruby -Ilib -Ispec spec/regression_gaps_spec.rb
+
+# 详细输出
+rake ruby_agent:test:verbose
+```
+
+> 环境：Ruby 3.3+，测试框架 **minitest**（随 Ruby 标准发行版提供）。
+> `Gemfile` 中的 `zeitwerk` 仅用于插件自动加载，属**可选依赖**——缺失时核心三层仍可独立运行、测试照常通过。
+
+## 当前状态（2026-09-11）
+
+第一版可运行内核已落地，**29 个用例 / 53 条断言全绿**（1 例在未安装 zeitwerk 时自动跳过）：
+
+| 层 | 文件 | 职责 |
+|----|------|------|
+| 核心层 | `lib/ruby_agent/doc.rb` | `parse` / `rewrite_lines` / `validate!` / `commit` |
+| 插件层 | `lib/ruby_agent/doc_plugin.rb` | `load!` / `teach` / `for_llm` / `watch` |
+| 中枢层 | `lib/ruby_agent/doc_hub.rb` | `mount` / `unmount` / `[]` / `for_llm` / `teach` / `watch_all` |
+
+其中 `spec/regression_gaps_spec.rb` 用三条回归测试固化了参考 Demo 暴露的三个缺口——
+任何一次回退都会立刻变红。缺口的成因与证据见 [doc-demo-review.md](./docs/doc-demo-review.md)。
+
+## 项目结构
+
+```
+ruby-agent-self-iteration/
+├── Gemfile                       # Ruby 依赖管理（zeitwerk 可选）
+├── Rakefile                      # 构建任务（minitest）
+├── README.md                     # 项目愿景与现状
+├── docs/
+│   ├── architecture.md           # 架构设计
+│   ├── sprint-plan.md            # 敏捷迭代计划
+│   ├── doc-demo-review.md        # 参考 Demo 的实证评估
+│   ├── demo-review.md            # 早期 Demo 评审
+│   ├── tdd-workflow.md           # TDD 工作流规范
+│   ├── test-template.md          # 测试模板
+│   └── checklist.md              # 交付检查清单
+├── lib/
+│   ├── ruby_agent.rb             # 主入口（Zeitwerk 延迟加载）
+│   └── ruby_agent/
+│       ├── doc.rb                # 核心层：注释解析 / 校验 / 原子提交
+│       ├── doc_plugin.rb         # 插件层：加载 / 教学 / 热重载
+│       └── doc_hub.rb            # 中枢层：挂载 / 寻址 / 读写路由
+├── spec/
+│   ├── spec_helper.rb            # 测试配置与夹具
+│   ├── ruby_agent_spec.rb        # 入口与组件装配
+│   ├── doc_spec.rb               # 核心层：解析 / 校验 / 提交
+│   ├── doc_plugin_spec.rb        # 插件层：加载 / 教学 / 回滚 / 热重载
+│   ├── doc_hub_spec.rb           # 中枢层：挂载 / 路由
+│   └── regression_gaps_spec.rb   # 回归：三个缺口
+└── plugins/                      # 插件目录（用户自定义）
+```
+
+## 核心架构
+
+### 组件关系
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                     Agent Loop                          │
+│  (通过 LLM API 驱动，读写走同一份 registry)               │
+└─────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────┐
+│                      DocHub                             │
+│  - mount / unmount 插件        - for_llm（读）           │
+│  - 按名寻址 []                 - teach（写）             │
+│  - watch_all 广播热重载                                  │
+└─────────────────────────────────────────────────────────┘
+                           │
+           ┌───────────────┼───────────────┐
+           ▼               ▼               ▼
+    ┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+    │  DocPlugin  │ │  Doc (核心) │ │  Zeitwerk   │
+    │ (插件层)    │ │  注释校验器 │ │ (可选加载)  │
+    └─────────────┘ └─────────────┘ └─────────────┘
+           │               │
+           └───────┬───────┘
+                   ▼
+            ┌─────────────┐
+            │  原子提交    │ 试编译 + .tmp + rename
+            └─────────────┘
+```
+
+### 核心概念
+
+| 概念 | 说明 |
+|------|------|
+| **Doc** | 核心层。`# @doc` 的解析、改写、**注释层校验**与原子提交 |
+| **DocPlugin** | 每个 `.rb` 文件都是一个插件，自带知识声明和生命周期 |
+| **DocHub** | 插件注册表，支持挂载/卸载/按名寻址/读写分离 |
+| **注释校验器** | 白名单 key + 禁换行 + 长度上限，为 LLM 的写通道独立设闸 |
+| **Zeitwerk** | 可选。插件自动加载与热重载（缺失时核心功能不受影响） |
+| **Refinements** | Ruby 特性，用于控制修改作用域，避免全局污染（规划中） |
+
+## 核心原则
+
+| 原则 | 含义 |
+|------|------|
+| **一切皆插件** | 没有特权内核，连 Agent Loop 本身都可替换 |
+| **可逆副作用** | 任何修改都必须能撤销，观察等价恢复即可 |
+| **失败关闭** | 加载失败保留旧版，写回失败不落盘——**注释层与代码层各自设闸** |
+| **注释即契约** | `# @doc` 是唯一持久化格式，且是被强校验的写入契约，不是自由文本 |
+| **原子提交** | 试编译通过才 rename，不留下半截状态 |
+| **按插件重载** | 一个插件炸了不影响其他插件 |
+
+## 开发流程
+
+### 1. 写一个带契约的插件
+
+```ruby
+# plugins/math.rb
+# @doc role: 提供基础算术能力
+# @doc note: 所有方法均为纯函数
+def solve(a, b)
+  a + b
+end
+```
+
+### 2. 挂载到 DocHub
+
+```ruby
+require 'ruby_agent'
+
+hub = RubyAgent.doc_hub
+hub.mount(RubyAgent::DocPlugin.new('math', 'plugins/math.rb'))
+
+hub['math']            # => DocPlugin 实例
+hub.for_llm            # => LLM 读：汇总所有插件的知识
+```
+
+### 3. 让 LLM 写回知识（带校验与回滚）
+
+```ruby
+# 写：定向到某个插件；失败返回 false 且磁盘不变
+ok = hub.teach('math', :solve, note: '先加后减，求最终答案')
+
+# 合并语义：原有 role 保留，新增 note
+hub['math'].registry
+# => {"solve" => {"role" => "提供基础算术能力", "note" => "先加后减，求最终答案"}}
+
+# 非法写入被拒：换行值 / 白名单外 key
+hub.teach('math', :solve, syntax: "合法开头\ndef injected; end")  # => false
+hub.teach('math', :solve, evil_key: 'x')                          # => false
+```
+
+### 4. 热重载
+
+```ruby
+hub.watch_all(interval: 0.3)   # 按插件粒度比对 mtime，变更即重载
+```
+
+## 迭代规划
+
+详见 [sprint-plan.md](./docs/sprint-plan.md)
+
+### Sprint 时间表
+
+| Sprint | 周期 | 目标 | 状态 |
+|--------|------|------|------|
+| 0 | W1 | 项目骨架与环境 | ✅ 完成 |
+| 1 | W2 | Doc 核心层 + DocPlugin 基础（含 3 条回归红测） | ✅ 完成 |
+| 2 | W3 | DocHub 核心 | 🟡 进行中 |
+| 3 | W4 | 动态修改能力 | ⬜ 待开始 |
+| 4 | W5-6 | Agent Loop 集成 | ⬜ 待开始 |
+| 5 | W7 | 知识沉淀与闭环 | ⬜ 待开始 |
+
+## TDD 实践
+
+遵循红-绿-重构循环，详见 [tdd-workflow.md](./docs/tdd-workflow.md)。
+
+回归测试的"有效性"用**变异验证**确认：人为复原缺口 → 测试必须变红 → 还原 → 恢复全绿。
+
+## 不做什么
+
+- ❌ 不做通用 Agent 框架，只做 Ruby 生态的自我迭代方案
+- ❌ 不追求物理级恢复，只保证观察等价
+- ❌ 不让 LLM 碰安全边界，硬规则用确定性代码强制执行
+- ❌ 不替代 Git，但让每次修改都可追溯、可回滚
+- ❌ 不用"把坏代码塞进注释值"来证明失败关闭——那是假阳性
+
+## 成功标准
+
+一个 LLM Agent 能在 Ruby 项目里：
+1. ✅ 读懂自己当前的所有插件和知识
+2. ✅ 提出一个源码级修改方案
+3. ✅ 安全地应用修改，失败自动回滚
+4. ✅ 新旧版本并行验证
+5. ✅ 把这次经验写回知识库
+6. ✅ 下一次迭代从更新后的知识出发
+
+**循环往复，持续进化，永不崩盘。**
+
+## 贡献指南
+
+1. Fork 本仓库
+2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
+3. 遵循 TDD 流程开发（先写失败测试）
+4. 确保测试通过 (`rake ruby_agent:test`)
+5. 提交更改 (`git commit -am 'Add amazing feature'`)
+6. 推送到分支 (`git push origin feature/amazing-feature`)
+7. 创建 Pull Request
+
+## 许可证
+
+MIT License

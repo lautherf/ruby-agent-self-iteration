@@ -1,0 +1,19 @@
+# Bundle
+.bundle/
+**/.bundle/
+/Gemfile.lock
+
+# Coverage
+coverage/
+.rspec_status
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Ruby
+*.gem
+spec/reports/
+tmp/
