@@ -35,10 +35,17 @@ STAGES = {
     { name: 'argmax',         sem: '返回数组最大元素的第一个下标；空数组抛 ArgumentError' },
     { name: 'entropy',        sem: '信息熵 H=-Σ p_i×log2(p_i)，返回浮点数（输入为概率分布 p，和为 1）' },
     { name: 'cross_entropy',  sem: '交叉熵 -Σ p_i×log2(q_i)，返回浮点数（p 为真实分布、q 为预测分布，等长数组；长度不等抛 ArgumentError）' }
+  ],
+  '逻辑学' => [
+    { name: 'implication',   sem: '蕴含 p→q：仅当 p 真且 q 假时为假，其余恒真（p 假则蕴含为真）' },
+    { name: 'biconditional', sem: '双条件 p↔q：p 与 q 同真或同假时为真，否则为假' },
+    { name: 'xor',           sem: '异或 XOR：p 与 q 不同时为真，相同时为假' },
+    { name: 'nand',          sem: '与非 NAND：仅 p 与 q 同时为真时为假，其余为真' },
+    { name: 'nor',           sem: '或非 NOR：仅 p 与 q 同时为假时为真，其余为假' }
   ]
 }.freeze
 
-DISPLAY = { '初中' => '初中数学', '高中' => '高中数学', '大学' => '大学·LLM基础学科' }.freeze
+DISPLAY = { '初中' => '初中数学', '高中' => '高中数学', '大学' => '大学·LLM基础学科', '逻辑学' => '逻辑学' }.freeze
 
 # 老师的外部验收卷（不给模型）：模型自己写的 verify 只是自证，这里才是复验
 ACCEPT = {
@@ -67,8 +74,18 @@ ACCEPT = {
                { 'args' => [[-2, -1]], 'expected' => 1 }],
   'entropy' => [{ 'args' => [[0.5, 0.5]], 'expected' => 1.0 }, { 'args' => [[1.0]], 'expected' => 0.0 },
                 { 'args' => [[0.25, 0.25, 0.25, 0.25]], 'expected' => 2.0 }],
-  'cross_entropy' => [{ 'args' => [[0.5, 0.5], [0.5, 0.5]], 'expected' => 1.0 },
-                      { 'args' => [[1.0, 0.0], [1.0, 0.0]], 'expected' => 0.0 }]
+'cross_entropy' => [{ 'args' => [[0.5, 0.5], [0.5, 0.5]], 'expected' => 1.0 },
+                    { 'args' => [[1.0, 0.0], [1.0, 0.0]], 'expected' => 0.0 }],
+  'implication' => [{ 'args' => [true, true], 'expected' => true }, { 'args' => [true, false], 'expected' => false },
+                    { 'args' => [false, true], 'expected' => true }, { 'args' => [false, false], 'expected' => true }],
+  'biconditional' => [{ 'args' => [true, true], 'expected' => true }, { 'args' => [true, false], 'expected' => false },
+                      { 'args' => [false, true], 'expected' => false }, { 'args' => [false, false], 'expected' => true }],
+  'xor' => [{ 'args' => [true, true], 'expected' => false }, { 'args' => [true, false], 'expected' => true },
+            { 'args' => [false, false], 'expected' => false }],
+  'nand' => [{ 'args' => [true, true], 'expected' => false }, { 'args' => [true, false], 'expected' => true },
+             { 'args' => [false, false], 'expected' => true }],
+  'nor' => [{ 'args' => [true, true], 'expected' => false }, { 'args' => [true, false], 'expected' => false },
+            { 'args' => [false, false], 'expected' => true }]
 }.freeze
 
 stage_arg = (ARGV[0] || 'all').to_s

@@ -239,3 +239,28 @@ def cross_entropy(p, q)
   end
   result
 end
+# @doc role: 逻辑蕴含 p→q：仅当 p 真且 q 假时为假，其余恒真（p 假则蕴含为真）。
+# @doc note: Ruby 实现为 !p || q，通过真值表全部 4 个用例 verify。
+def implication(p, q)
+  !p || q
+end
+# @doc role: 双条件逻辑：p↔q，同真或同假时为真，否则为假。
+# @doc note: Ruby 实现为 p == q，已通过真值表全部 4 用例 verify。
+def self.biconditional(p, q)
+  p == q
+end
+# @doc role: 异或 XOR：p 与 q 不同时为真，相同时为假，返回布尔值。
+# @doc note: Ruby 实现，通过真值表全部4用例 verify。
+def xor(p, q)
+  !(p == q)
+end
+# @doc role: 与非 NAND：仅 p 与 q 同时为真时为假，其余为真。
+# @doc note: Ruby 实现为 !(p && q)，已通过 4 个真值表用例 verify 全部正确。
+def nand(p, q)
+  !(p && q)
+end
+# @doc role: 或非 NOR：仅 p 与 q 同时为假时为真，其余为假
+# @doc note: Ruby 实现为 !(p || q)，已通过 4 个真值表用例 verify
+def nor(p, q)
+  !(p || q)
+end

@@ -31,3 +31,7 @@ end
 # @doc tags: 大学·LLM基础学科,知识沉淀
 def lesson_007
 end
+# @doc note: 逻辑学方法：implication, biconditional, xor, nand, nor。语义要点：implication(p→q) 仅 p真q假为假，实现 !p||q；biconditional(p↔q) 同真同假为真，实现 p==q；xor 不同为真；nand 仅同真为假，实现 !(p&&q)；nor 仅同假为真，实现 !(p||q)。边界：输入非布尔值可能抛 ArgumentError。踩坑：① 误记 implication 为 p&&q，实际是 !p||q；② nor/nand 易混淆，nor 是同假为真，nand 是同真为假。
+# @doc tags: 逻辑学,知识沉淀
+def lesson_008
+end
