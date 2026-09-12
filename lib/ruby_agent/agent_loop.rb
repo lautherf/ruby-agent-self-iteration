@@ -1,6 +1,8 @@
 # frozen_string_literal: true
 
 require 'json'
+require 'open3'
+require 'rbconfig'
 require_relative 'llm_adapter'
 require_relative 'code_editor'
 require_relative 'memory'
@@ -38,7 +40,7 @@ PROMPT
       'whoami' => '向 ra 自己的身份契约提问：我是谁、我学过什么、我不能做什么，参数：{}',
       'read_code' => '读取某个方法的当前源码，参数：{"plugin":"插件名","method":"方法名"}',
       'apply_code' => '把方法体整体替换为新代码；方法不存在时自动新增（追加到文件末尾），参数：{"plugin":"插件名","method":"方法名","code":"def 方法名(...)\\n实现\\nend"}。要求 code 定义同名方法，语法错会自动拒绝。',
-      'verify' => '在内存作用域真实运行方法并按验证项比对（可编程验证器：支持批量算例 cases=[{args,expected}]、异常边界 raises 期望抛错类名、布尔断言 assert 用表达式以 result 为输入，如 "result.odd?"）。参数：{"plugin":"插件名","method":"方法名","cases":[{"args":[..],"expected":期望值}]} 或单条 {"plugin":..,"method":..,"args":[..],"expected":..,"raises":..,"assert":..}。每项 args 必填，expected/raises/assert 三选一。任一验证项不过即失败，之前有 apply_code 时系统会自动回滚该修改。',
+      'verify' => '在隔离子进程中真实运行方法并按验证项比对（可编程验证器：支持批量算例 cases=[{args,expected}]、异常边界 raises 期望抛错类名、布尔断言 assert 用表达式以 result 为输入，如 "result.odd?"）。参数：{"plugin":"插件名","method":"方法名","cases":[{"args":[..],"expected":期望值}]} 或单条 {"plugin":..,"method":..,"args":[..],"expected":..,"raises":..,"assert":..}。每项 args 必填，expected/raises/assert 三选一。验证在独立进程执行，恶意代码只会炸掉验证器进程。任一验证项不过即失败，之前有 apply_code 时系统会自动回滚该修改。',
       'teach' => '写回插件方法的 @doc 元数据，参数：{"plugin":"插件名","method":"方法名","role":"..","note":".."}',
       'learn' => '把经验沉淀进知识仓库，参数：{"lesson":"经验文本","tags":"可选标签"}',
       'remember' => '把一条对话写进记忆（结构化数据，经本体论校验：kind/who/status 有受控取值，supersedes 必须指向真实存在的记录 id）。参数：{"kind":"fact|preference|task|event|meta，默认 fact","who":"user|ra|system|tool，默认 ra","note":"内容","status":"stated|confirmed，可选","about":"这条记忆关于谁，可选","supersedes":"被它取代的旧记录 id，可选（修订时用）","tags":"可选标签"}',
@@ -68,7 +70,7 @@ PROMPT
 
     attr_reader :hub, :llm, :state, :events, :tools
 
-    def initialize(hub:, llm:, max_steps: 8, system_prompt: DEFAULT_SYSTEM_PROMPT, knowledge: nil, memory: nil, auto_rollback: true)
+    def initialize(hub:, llm:, max_steps: 8, system_prompt: DEFAULT_SYSTEM_PROMPT, knowledge: nil, memory: nil, auto_rollback: true, writable_plugins: nil)
       @hub = hub
       @llm = llm
       @max_steps = max_steps
@@ -76,6 +78,7 @@ PROMPT
       @knowledge = knowledge
       @memory = memory
       @auto_rollback = auto_rollback
+      @writable_plugins = writable_plugins&.map(&:to_s)
       @tools = {}
       @events = []
       @observers = []
@@ -343,8 +346,9 @@ PROMPT
       end
     end
 
-    # apply_code 与 promote 共用的写方法路径：试编译 → 原子落盘 → 记入 code_changes。
+    # apply_code 与 promote 共用的写方法路径：权限白名单 → 试编译 → 原子落盘 → 记入 code_changes。
     def perform_apply(input)
+      assert_write!(editor_name(input))
       method = (input['method'] || input[:method]).to_s
       code = input['code'] || input[:code] || input['source'] || ''
       editor = editor_for_plugin(input)
@@ -381,6 +385,9 @@ PROMPT
         input = {} if input.nil?
         plugin = input['plugin'] || input[:plugin]
         method = input['method'] || input[:method]
+        raise '插件缺失' if plugin.to_s.empty?
+
+        assert_write!(plugin.to_s)
         spec = input.reject { |k, _v| %w[plugin method].include?(k.to_s) }.transform_keys(&:to_sym)
         @hub.teach(plugin, method, **spec)
       end
@@ -407,8 +414,6 @@ PROMPT
         input = {} if input.nil?
         method = (input['method'] || input[:method]).to_s
         editor = editor_for_plugin(input)
-        scope = editor.scope
-        obj = Object.new.extend(scope)
 
         cases = input['cases'] || input[:cases]
         forms = if cases
@@ -418,7 +423,8 @@ PROMPT
                 end
         raise '缺少验证项：请提供 args+expected、args+raises、args+assert 或 cases 批量算例' if forms.empty?
 
-        details = forms.map { |form| verify_case_run(scope, obj, method, form, editor.path) }
+        # 权限分层（执行侧）：验证代码在独立子进程运行，恶意/错误的 Ruby 只炸 worker。
+        details = run_verify_worker(editor.path, method, forms)
         failed = details.reject { |d| d[:ok] }
 
         if failed.empty?
@@ -498,54 +504,35 @@ PROMPT
       end
     end
 
-    # 可编程验证器的单条执行：真实求值 + 三种验证形态（值相等 / 抛错 / 布尔断言）。
-    # 返回值始终是 { ok:, actual:, expected:, text: }，调用方按 failed 汇总决策。
-    def verify_case_run(scope, obj, method, form, path)
-      args = Array(form['args'])
-      arg_text = args.map(&:inspect).join(', ')
+    # 权限分层（写侧）：白名单外插件只读不写。writable_plugins 为 nil 表示全部可写（默认宽松）。
+    def write_allowed?(name)
+      @writable_plugins.nil? || @writable_plugins.include?(name.to_s)
+    end
 
-      call = proc { scope.respond_to?(method) ? scope.send(method, *args) : obj.send(method, *args) }
+    # 权限入口：apply_code / promote / teach 落笔前强制校验，无权即拒绝。
+    def assert_write!(name)
+      return if write_allowed?(name)
 
-      if form.key?('raises')
-        begin
-          actual = call.call
-          { ok: false, actual: actual.inspect,
-            text: "#{method}(#{arg_text}) 期望抛 #{form['raises']} 但正常返回 #{actual.inspect}" }
-        rescue NoMethodError, StandardError => e
-          wanted = Object.const_get(form['raises'].to_s) rescue nil
-          if wanted && e.is_a?(wanted)
-            { ok: true, actual: nil, text: "#{method}(#{arg_text}) 抛 #{e.class} 符合预期" }
-          else
-            { ok: false, actual: e.class.to_s,
-              text: "#{method}(#{arg_text}) 期望抛 #{form['raises']} 实际抛 #{e.class}: #{e.message}" }
-          end
-        end
-      else
-        begin
-          actual = call.call
-          if form.key?('assert')
-            verdict = obj.instance_eval("result = #{actual.inspect}\n(#{form['assert']})", path, 1)
-            if verdict
-              { ok: true, actual: actual.inspect,
-                text: "#{method}(#{arg_text}) 断言 #{form['assert']} 成立 (#{actual.inspect})" }
-            else
-              { ok: false, actual: actual.inspect,
-                text: "#{method}(#{arg_text}) 断言 #{form['assert']} 不成立 (实际 #{actual.inspect})" }
-            end
-          else
-            expected = form['expected'].to_s
-            if actual.to_s == expected
-              { ok: true, actual: actual, text: "#{method}(#{arg_text}) = #{actual}" }
-            else
-              { ok: false, actual: actual, expected: expected,
-                text: "#{method}(#{arg_text}) 期望=#{expected} 实际=#{actual}" }
-            end
-          end
-        rescue NoMethodError, StandardError => e
-          { ok: false, actual: "#{e.class}: #{e.message}",
-            text: "调用 #{method}(#{arg_text}) 抛 #{e.class}: #{e.message}" }
-        end
+      raise "无权写入插件 #{name}（写白名单仅允许 #{@writable_plugins.inspect}）"
+    end
+
+    # 权限分层（执行侧）：把验证计划交给独立子进程，返回逐用例结果。
+    # 子进程异常退出（如 assert 里 exit!）时兜底为一条失败项，主进程不崩溃。
+    def run_verify_worker(path, method, forms)
+      payload = { file: path, method: method, forms: forms }.to_json
+      out, _err, status = Open3.capture3(RbConfig.ruby, File.expand_path('verify_worker.rb', __dir__),
+                                         stdin_data: payload)
+      unless status.success?
+        return [{ ok: false, actual: 'subprocess', text: '验证执行被隔离终止（子进程非零退出）' }]
       end
+
+      parsed = JSON.parse(out) rescue nil
+      return [{ ok: false, actual: 'subprocess', text: '验证器子进程无可解析输出' }] unless parsed&.key?('results')
+
+      parsed['results'].map { |r| r.transform_keys(&:to_sym) }
+    rescue StandardError => e
+      [{ ok: false, actual: "#{e.class}: #{e.message}",
+         text: "隔离验证器失败: #{e.class}: #{e.message}" }]
     end
 
     # run 结束后自动沉淀一条本次对话（任务 → ra 的答复，压平成单行便于召回）

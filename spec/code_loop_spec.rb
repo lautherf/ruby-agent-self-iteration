@@ -240,4 +240,58 @@ class CodeLoopSpec < Minitest::Test
       assert_equal :rolled_back, agent.state.code_changes.last[:status]
     end
   end
+
+  # —— 权限分层（泛化三件套之二）——
+  # 执行侧：verify 在独立子进程运行，恶意/写坏的 assert 只能炸 worker，主进程不崩溃。
+  # 写侧：writable_plugins 白名单外插件只读不写（apply_code/teach/promote 落笔前强制校验）。
+
+  def test_verify_isolates_malicious_assert_in_worker
+    with_hub do |hub, path|
+      agent = build_loop(hub, ['Final Answer: ok'])
+      agent.invoke_tool('apply_code', { 'plugin' => 'math', 'method' => 'add',
+                                        'code' => "def add(a, b)\n  a + b\nend" })
+
+      outcome = agent.invoke_tool('verify', { 'plugin' => 'math', 'method' => 'add',
+                                              'cases' => [{ 'args' => [1, 1], 'assert' => 'exit!' }] })
+
+      assert_includes outcome, '验证失败(1/1)', 'exit! 在旧实现里会杀掉测试进程；隔离后只是失败'
+      assert_includes outcome, '隔离终止'
+      assert_equal :rolled_back, agent.state.code_changes.last[:status], '逃逸验证照样回滚'
+      content = File.read(path)
+      assert_includes content, 'def solve(a, b)', '回滚删掉新增，插件文件回到原状'
+      refute_includes content, 'def add', '主进程存活且磁盘被正确还原'
+    end
+  end
+
+  def test_writable_whitelist_blocks_cross_plugin_writes
+    with_hub do |hub, path|
+      agent = RubyAgent::AgentLoop.new(hub: hub, llm: RubyAgent::MockLLM.new(['Final Answer: ok']),
+                                       writable_plugins: ['ra'])
+
+      error = assert_raises(StandardError) do
+        agent.invoke_tool('apply_code', { 'plugin' => 'math', 'method' => 'solve',
+                                          'code' => "def solve(a, b)\n  a * 10\nend" })
+      end
+      assert_includes error.message, '无权写入插件 math'
+      refute_includes File.read(path), 'a * 10', '白名单外的插件磁盘不得被改动'
+
+      assert_raises(StandardError) do
+        agent.invoke_tool('teach', { 'plugin' => 'math', 'method' => 'solve', 'note' => 'x' })
+      end
+      assert_raises(StandardError) do
+        agent.invoke_tool('apply_code', { 'plugin' => 'math', 'method' => 'add',
+                                          'code' => "def add(a, b)\n  a + b\nend" })
+      end
+    end
+  end
+
+  def test_writable_whitelist_allows_listed_plugin
+    with_hub do |hub, _path|
+      agent = RubyAgent::AgentLoop.new(hub: hub, llm: RubyAgent::MockLLM.new(['Final Answer: ok']),
+                                       writable_plugins: %w[ra math])
+      outcome = agent.invoke_tool('apply_code', { 'plugin' => 'math', 'method' => 'add',
+                                                  'code' => "def add(a, b)\n  a + b\nend" })
+      assert_includes outcome, '已应用新实现到 math#add'
+    end
+  end
 end
