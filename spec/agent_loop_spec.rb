@@ -228,6 +228,20 @@ class AgentLoopSpec < Minitest::Test
     assert_equal({ 'value' => 'just some garbage' }, got.first, '完全无法提取时退化为 {value: raw}')
   end
 
+  def test_parse_input_lenient_with_bare_newlines_in_json_value
+    got = []
+    agent = build_loop([
+      "Action: echo\nAction Input: {\"lesson\":\"第一行\n第二行\n  - 列表\"}",
+      'Final Answer: done'
+    ])
+    agent.register_tool('echo') { |input| got << input; 'ok' }
+
+    assert quietly { agent.run('t') }
+
+    assert_equal({ 'lesson' => "第一行\n第二行\n  - 列表" }, got.first,
+                 '长笔记里的裸换行应以 \\n 转义后解析，内容不丢')
+  end
+
   def test_sync_reflects_newly_mounted_plugin
     agent = build_loop(['Final Answer: ok'])
 

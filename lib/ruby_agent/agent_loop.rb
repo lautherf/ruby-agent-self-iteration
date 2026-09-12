@@ -300,10 +300,46 @@ PROMPT
       # 整体 JSON.parse 必失败 → 退而求其次提取【首个完整 JSON 对象】，参数才不被吞。
       return { 'value' => raw } unless (first = extract_first_json_object(text))
 
-      extracted = JSON.parse(first)
+      extracted = lenient_json_parse(first)
       extracted.is_a?(Hash) ? extracted : { 'value' => extracted }
     rescue StandardError
       { 'value' => raw }
+    end
+
+    # 宽容 JSON：长笔记场景里模型常把真实换行直接写进字符串值（非法 JSON）。
+    # 仅在字符串值内部，把裸 \n / \r / \t 转义成 \\n 等，其余原样，凑回可 parse 的文本。
+    def lenient_json_parse(text)
+      JSON.parse(text)
+    rescue JSON::ParserError
+      out = +''
+      in_str = false
+      esc = false
+      text.each_char do |c|
+        if in_str
+          if esc
+            out << c
+            esc = false
+          elsif c == '\\'
+            out << c
+            esc = true
+          elsif c == '"'
+            in_str = false
+            out << c
+          elsif c == "\n"
+            out << '\\n'
+          elsif c == "\r"
+            out << '\\r'
+          elsif c == "\t"
+            out << '\\t'
+          else
+            out << c
+          end
+        else
+          in_str = true if c == '"'
+          out << c
+        end
+      end
+      JSON.parse(out)
     end
 
     # 从文本里剥出第一个配平的 {…} 对象（字符串字面量内的花括号不计）

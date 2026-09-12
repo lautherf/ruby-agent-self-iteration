@@ -72,3 +72,70 @@ def sentence_type(s)
   return '陈述' if s.end_with?('。')
   '未知'
 end
+# @doc role: 最大公约数：返回两个整数的最大公约数 gcd(a,b)，支持负数输入，处理 gcd(a,0)=a 和 gcd(0,0)=0 边界，采用欧几里得算法。
+# @doc note: 采用欧几里得算法，自动取绝对值处理负数，迭代实现简洁高效。已通过 6 个算例验证：正数、负数、零、互质、边界情况全部正确。
+def gcd(a, b)
+  # 取绝对值处理负数输入
+  a = a.abs
+  b = b.abs
+  # 欧几里得算法迭代求最大公约数
+  while b != 0
+    a, b = b, a % b
+  end
+  a
+end
+# @doc role: 素数判断：n 为 >=2 的整数时是否素数，否则 false
+# @doc note: 初中数学内化：采用试除法 O(√n)，非整数或非正数统一返回 false，2 是唯一的偶素数
+def is_prime?(n)
+  return false unless n.is_a?(Integer) && n >= 2
+  return true if n == 2
+  return false if n.even?
+  i = 3
+  while i * i <= n
+    return false if n % i == 0
+    i += 2
+  end
+  true
+end
+# @doc role: 绝对值函数：返回 x 的绝对值 |x|，支持整数、负数、0、小数
+# @doc note: 实现：x < 0 时返回 -x，否则返回 x。已验证 4 个用例通过（0、负整数、正小数、负小数）。
+def abs(x)
+  x < 0 ? -x : x
+end
+# @doc role: 最小公倍数：返回两个正整数的最小公倍数 lcm(a,b)，任一为0返回0，负数取绝对值后计算，利用已有 gcd 方法实现。
+# @doc note: 利用 gcd 方法（欧几里得算法）计算，公式 lcm(a,b) = |a*b| / gcd(a,b)。已通过 6 个算例 verify 包括正数、负数、零、自身、互质边界。
+def lcm(a, b)
+  raise ArgumentError, "参数必须为整数" unless a.is_a?(Integer) && b.is_a?(Integer)
+  return 0 if a == 0 || b == 0
+  # 利用 gcd 计算：lcm(a,b) = |a*b| / gcd(a,b)
+  (a.abs * b.abs) / gcd(a, b)
+end
+# @doc role: 阶乘：n!，n 为非负整数；0!=1；负数抛 ArgumentError
+# @doc note: Ruby 实现迭代累乘，时间复杂度 O(n)，已通过 verify 验证 0/正数/负数边界
+def factorial(n)
+  raise ArgumentError, "n must be non-negative" if n < 0
+  result = 1
+  (1..n).each { |i| result *= i }
+  result
+end
+# @doc role: 排列数：返回 P(n,k)=n!/(n-k)!，n,k 为非负整数且 0<=k<=n
+# @doc note: 实例方法实现，与 factorial 一致。参数校验拒绝非整数、负数及 k>n。已 verify 5 算例通过：5/2→20, 0/0→1, 3/3→6, 10/0→1, 10/10→3628800
+def permutation(n, k)
+  raise ArgumentError, "n and k must be non-negative integers" unless n.is_a?(Integer) && k.is_a?(Integer) && n >= 0 && k >= 0
+  raise ArgumentError, "k must be <= n" if k > n
+  (n.downto(n-k+1).reduce(1, :*))
+end
+# @doc role: 组合数：返回 C(n,k)=n!/(k!(n-k)!)，0<=k<=n
+# @doc note: 实现依赖已有的 factorial 方法。参数校验拒绝非整数、负数及 k>n。已 verify 7 算例通过：5/2→10, 0/0→1, 3/3→1, 10/3→120, 负数抛 ArgumentError。
+def combination(n, k)
+  raise ArgumentError, 'n and k must be non-negative integers' unless n.is_a?(Integer) && k.is_a?(Integer) && n >= 0 && k >= 0
+  raise ArgumentError, 'k must be <= n' if k > n
+  factorial(n) / (factorial(k) * factorial(n - k))
+end
+# @doc role: 等差数列前n项和
+# @doc note: 计算 S = n(2a1+(n-1)d)/2，a1为首项、d为公差、n为项数。n<0抛ArgumentError，n=0返回0。已通过7个边界算例验证。
+def arithmetic_sum(a1, d, n)
+  raise ArgumentError, 'n must be non-negative' if n < 0
+  return 0 if n == 0
+  (n * (2 * a1 + (n - 1) * d)) / 2
+end
