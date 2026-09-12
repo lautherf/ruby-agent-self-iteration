@@ -295,7 +295,48 @@ PROMPT
       parsed = JSON.parse(text)
       parsed.is_a?(Hash) ? parsed : { 'value' => parsed }
     rescue JSON::ParserError
+      # 真实模型常把"以为自己会看到的 Observation"也续行写进 Action Input：
+      # {"plugin":..,"method":..} \n {"result":{...通篇垃圾}}\n 下一题…
+      # 整体 JSON.parse 必失败 → 退而求其次提取【首个完整 JSON 对象】，参数才不被吞。
+      return { 'value' => raw } unless (first = extract_first_json_object(text))
+
+      extracted = JSON.parse(first)
+      extracted.is_a?(Hash) ? extracted : { 'value' => extracted }
+    rescue StandardError
       { 'value' => raw }
+    end
+
+    # 从文本里剥出第一个配平的 {…} 对象（字符串字面量内的花括号不计）
+    def extract_first_json_object(text)
+      start = text.index('{')
+      return nil unless start
+
+      depth = 0
+      in_str = false
+      esc = false
+      i = start
+      while i < text.length
+        c = text[i]
+        if in_str
+          if esc
+            esc = false
+          elsif c == '\\'
+            esc = true
+          elsif c == '"'
+            in_str = false
+          end
+        else
+          case c
+          when '"' then in_str = true
+          when '{' then depth += 1
+          when '}'
+            depth -= 1
+            return text[start..i] if depth.zero?
+          end
+        end
+        i += 1
+      end
+      nil
     end
 
     def execute_tool(name, input)

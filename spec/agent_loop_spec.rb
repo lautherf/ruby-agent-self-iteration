@@ -201,6 +201,33 @@ class AgentLoopSpec < Minitest::Test
     assert_equal({ 'msg' => 'hi', 'n' => 2 }, got.first, '必须剥掉 ```json 围栏再解析')
   end
 
+  def test_parse_input_extract_json_from_action_input_with_faked_observation
+    got = []
+    agent = build_loop([
+      # Agnes 真机典型坑：Action Input 后紧跟着模型"以为会看到的 Observation JSON"
+      "Action: echo\nAction Input: {\"msg\":\"a\"}\n{\"result\":{\"value\":\"b\"}}",
+      'Final Answer: done'
+    ])
+    agent.register_tool('echo') { |input| got << input; 'ok' }
+
+    assert quietly { agent.run('t') }
+
+    assert_equal({ 'msg' => 'a' }, got.first, '首个完整 JSON 块才是真正的 Action Input，后继乱 JSON 必须被丢弃')
+  end
+
+  def test_parse_input_gives_up_and_passes_raw_on_incomprehensible_input
+    agent = build_loop([
+      "Action: echo\nAction Input: just some garbage",
+      'Final Answer: done'
+    ])
+    got = []
+    agent.register_tool('echo') { |input| got << input; 'ok' }
+
+    assert quietly { agent.run('t') }
+
+    assert_equal({ 'value' => 'just some garbage' }, got.first, '完全无法提取时退化为 {value: raw}')
+  end
+
   def test_sync_reflects_newly_mounted_plugin
     agent = build_loop(['Final Answer: ok'])
 
