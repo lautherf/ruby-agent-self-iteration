@@ -39,6 +39,7 @@ PROMPT
       'read_docs' => '查看全部插件的 @doc 知识（含记忆与经验），参数：{}',
       'whoami' => '向 ra 自己的身份契约提问：我是谁、我学过什么、我不能做什么，参数：{}',
       'read_code' => '读取某个方法的当前源码，参数：{"plugin":"插件名","method":"方法名"}',
+      'library' => '浏览方法库：列出插件全部方法名、出现次数（重复标记）与 @doc 摘要，动手前先自查库存，参数：{"plugin":"插件名"}',
       'apply_code' => '把方法体整体替换为新代码；方法不存在时自动新增（追加到文件末尾），参数：{"plugin":"插件名","method":"方法名","code":"def 方法名(...)\\n实现\\nend"}。要求 code 定义同名方法，语法错会自动拒绝。',
       'verify' => '在隔离子进程中真实运行方法并按验证项比对（可编程验证器：支持批量算例 cases=[{args,expected}]、异常边界 raises 期望抛错类名、布尔断言 assert 用表达式以 result 为输入，如 "result.odd?"）。参数：{"plugin":"插件名","method":"方法名","cases":[{"args":[..],"expected":期望值}]} 或单条 {"plugin":..,"method":..,"args":[..],"expected":..,"raises":..,"assert":..}。每项 args 必填，expected/raises/assert 三选一。验证在独立进程执行，恶意代码只会炸掉验证器进程。任一验证项不过即失败，之前有 apply_code 时系统会自动回滚该修改。',
       'teach' => '写回插件方法的 @doc 元数据，参数：{"plugin":"插件名","method":"方法名","role":"..","note":".."}',
@@ -346,12 +347,17 @@ PROMPT
       end
     end
 
-    # apply_code 与 promote 共用的写方法路径：权限白名单 → 试编译 → 原子落盘 → 记入 code_changes。
+    # apply_code 与 promote 共用的写方法路径：权限白名单 → 方法唯一性 → 试编译 → 原子落盘 → 记入 code_changes。
     def perform_apply(input)
       assert_write!(editor_name(input))
       method = (input['method'] || input[:method]).to_s
       code = input['code'] || input[:code] || input['source'] || ''
       editor = editor_for_plugin(input)
+      n = editor.method_counts[method].to_i
+      if n > 1
+        raise "方法 #{editor_name(input)}##{method} 在文件中重复定义（#{n} 处），拒绝写入：先 Rollback 清理或用 library 查看方法库"
+      end
+
       ok = if editor.read_method(method).nil?
              editor.add(method, code)      # 不存在 → 追加新方法（自改长出能力）
            else
@@ -403,6 +409,22 @@ PROMPT
       register_tool('read_code') do |input|
         method = (input['method'] || input[:method]).to_s
         editor_for_plugin(input).read_method(method) || "未找到方法 #{method}"
+      end
+
+      # 方法库管理：列出插件全部方法名 + 出现次数（重复标记）+ @doc 摘要，供 AI 自查库存再动手。
+      register_tool('library') do |input|
+        name = editor_name(input)
+        plugin = @hub.get(name)
+        plugin = plugin.load! if plugin.registry.empty?
+        counts = CodeEditor.new(plugin.path).method_counts
+        registry = plugin.registry
+        lines = counts.sort.map do |m, n|
+          doc = (registry[m] || {}).map { |k, v| "#{k}=#{v}" }.join('，')
+          flag = n > 1 ? "⚠重复×#{n}" : ''
+          "- #{m}#{flag}#{doc.empty? ? '' : "（#{doc}）"}"
+        end
+        dups = counts.select { |_m, n| n > 1 }
+        "方法库 #{name}·#{counts.size} 个方法#{dups.empty? ? '' : "·重复 #{dups.size} 个"}：\n#{lines.join("\n")}"
       end
 
       register_tool('apply_code') do |input|

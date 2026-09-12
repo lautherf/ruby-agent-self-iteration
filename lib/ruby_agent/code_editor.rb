@@ -28,6 +28,17 @@ module RubyAgent
       lines.filter_map { |l| l[DEF_CAPTURE_RE, 1] }
     end
 
+    # 方法 → 出现次数（方法库的重复检测依据；同名 def 出现 ≥2 即冲突）
+    def method_counts
+      counts = Hash.new(0)
+      File.readlines(@path).each { |l| counts[l[DEF_CAPTURE_RE, 1]] += 1 if l[DEF_CAPTURE_RE, 1] }
+      counts
+    end
+
+    def duplicates
+      method_counts.select { |_m, n| n > 1 }
+    end
+
     # 读取单个方法源码（def .. end，含首尾行）；不存在返回 nil
     def read_method(method)
       @mutex.synchronize do

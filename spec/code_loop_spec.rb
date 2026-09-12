@@ -294,4 +294,59 @@ class CodeLoopSpec < Minitest::Test
       assert_includes outcome, '已应用新实现到 math#add'
     end
   end
+
+  # —— 方法库管理（泛化三件套之三 · MVP）——
+  # library 方法清单 + 重复定义闸门：AI 写库前先自查库存，同名 def 重复（历史污染）一律拒写。
+
+  def test_library_tool_lists_methods_with_doc_and_duplicate_flag
+    with_hub do |hub, _path|
+      agent = build_loop(hub, ['Final Answer: ok'])
+      agent.invoke_tool('apply_code', { 'plugin' => 'math', 'method' => 'add',
+                                        'code' => "def add(a, b)\n  a + b\nend" })
+      agent.invoke_tool('teach', { 'plugin' => 'math', 'method' => 'add', 'role' => '加法' })
+
+      listing = agent.invoke_tool('library', { 'plugin' => 'math' })
+      assert_includes listing, '方法库 math·2 个方法', '库里有原始方法和新长得的方法'
+      assert_includes listing, '- add（role=加法）'
+      assert_includes listing, '- solve'
+      refute_includes listing, '重复'
+    end
+  end
+
+  def test_apply_code_rejects_when_method_previously_duplicated
+    with_hub do |hub, path|
+      # 手工制造历史污染：同名 def 出现两次（模拟文件被外部改坏/旧 bug）
+      File.write(path, <<~RUBY)
+        def solve(a, b)
+          a + b
+        end
+        def solve(a, b)
+          a - b
+        end
+      RUBY
+      hub.mount(RubyAgent::DocPlugin.new('math', path))
+      agent = build_loop(hub, ['Final Answer: ok'])
+
+      error = assert_raises(StandardError) do
+        agent.invoke_tool('apply_code', { 'plugin' => 'math', 'method' => 'solve',
+                                          'code' => "def solve(a, b)\n  a * 10\nend" })
+      end
+      assert_includes error.message, '重复定义'
+      assert_includes error.message, 'library', '要让 AI 知道去哪自查'
+      refute_includes File.read(path), 'a * 10', '重复污染下不得落盘'
+
+      listing = agent.invoke_tool('library', { 'plugin' => 'math' })
+      assert_includes listing, '重复'
+      assert_includes listing, '重复×2'
+    end
+  end
+
+  def test_apply_code_adds_method_when_unique_and_ignore_duplicate_of_other_names
+    with_hub do |hub, _path|
+      agent = build_loop(hub, ['Final Answer: ok'])
+      outcome = agent.invoke_tool('apply_code', { 'plugin' => 'math', 'method' => 'sub',
+                                                  'code' => "def sub(a, b)\n  a - b\nend" })
+      assert_includes outcome, '已应用新实现到 math#sub', '唯一的方法名照常追加'
+    end
+  end
 end
