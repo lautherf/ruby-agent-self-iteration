@@ -10,6 +10,10 @@ module RubyAgent
   module Doc
     DOC_LINE = /^\s*#\s*@doc\s+(\w+):\s*(.*)$/
 
+    # 方法定义行：捕获方法名（支持 foo? / foo! / foo= 与 def self.foo / Klass.foo），
+    # 名后缘用 空白/左括号 收尾（\b 在 ? 与 ( 之间不成立，语文内化挖出的缺口）。
+    METHOD_DEF_RE = /^\s*def\s+(?:(?:self|Klass)\.)?(\w+[\?!=]?)(?:\s|\()/
+
     # 允许写入的注释键白名单（缺口 2 修复；Sprint 7 加入 who=对话发言人；
     # 记忆运转加入 memory=溯源记忆 id，promote 内化时 @doc 指向记忆源头）
     ALLOWED_KEYS = %w[role note example syntax params returns since deprecated tags motto who memory].freeze
@@ -21,17 +25,17 @@ module RubyAgent
 
     class << self
       # —— 解析：从文件读出 method => {attr => value} ——
-      # 键统一为 String（与 teach / commit 的键空间保持一致）
-      def parse(path)
-        registry = {}
-        pending = {}
-        File.foreach(path) do |line|
-          case line
-          when DOC_LINE
-            pending[$1] = $2.strip
-          when /^\s*def\s+(\w+)/
-            registry[$1] = pending.dup unless pending.empty?
-            pending = {}
+# 键统一为 String（与 teach / commit 的键空间保持一致）
+        def parse(path)
+          registry = {}
+          pending = {}
+          File.foreach(path) do |line|
+            case line
+            when DOC_LINE
+              pending[$1] = $2.strip
+            when METHOD_DEF_RE
+              registry[$1] = pending.dup unless pending.empty?
+              pending = {}
           when /^\s*#/, /^\s*$/
             # 普通注释/空行，保留 pending
           else
@@ -44,7 +48,9 @@ module RubyAgent
       # —— 生成：把 attrs 写成注释块，插到 def 上方 ——
       def rewrite_lines(path, method, attrs)
         src = File.readlines(path)
-        def_i = src.index { |l| l =~ /^\s*def\s+#{Regexp.escape(method.to_s)}\b/ }
+        # 方法名后缘用 空白/左括号 而非 \b：\b 在 foo? / foo!（标点+括号）间不成立，
+        # 会让 is_hanzi? 这类方法名永远定位不到 def 行（语文内化时挖出的缺口）。
+        def_i = src.index { |l| l =~ /^\s*def\s+(?:(?:self|Klass)\.)?#{Regexp.escape(method.to_s)}(?:\s|\()/ }
         return nil unless def_i
 
         # 往上吃掉已有的 @doc 注释块

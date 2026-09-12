@@ -47,3 +47,28 @@ def div(a, b)
   raise ArgumentError, "除数不能为0" if b == 0
   a.to_f / b
 end
+# @doc role: 拼音声调识别：从带声调拼音读出几声音（hǎo→3），无声调返回 0
+# @doc note: 小学语文内化
+def tone_of(py)
+  tones = { 'ā'=>1, 'ē'=>1, 'ī'=>1, 'ō'=>1, 'ū'=>1, 'ǖ'=>1, 'á'=>2, 'é'=>2, 'í'=>2, 'ó'=>2, 'ú'=>2, 'ǘ'=>2, 'ǎ'=>3, 'ě'=>3, 'ǐ'=>3, 'ǒ'=>3, 'ǔ'=>3, 'ǚ'=>3, 'à'=>4, 'è'=>4, 'ì'=>4, 'ò'=>4, 'ù'=>4, 'ǜ'=>4 }.freeze
+  c = py.each_char.find { |ch| tones.key?(ch) }
+  c ? tones[c] : 0
+end
+# @doc role: 汉字判断：单个字符是否属于 Unicode 汉字区（CJK）
+# @doc note: 小学语文内化
+def is_hanzi?(c)
+  c.length == 1 && c.ord >= 0x4E00 && c.ord <= 0x9FFF
+end
+# @doc role: 汉字计数：数出一段文字里的汉字个数
+# @doc note: 小学语文内化
+def hanzi_count(s)
+  s.each_char.count { |c| is_hanzi?(c) }
+end
+# @doc role: 句类判断：按结尾标点分 疑问/感叹/陈述/未知
+# @doc note: 小学语文内化
+def sentence_type(s)
+  return '疑问' if s.end_with?('？')
+  return '感叹' if s.end_with?('！')
+  return '陈述' if s.end_with?('。')
+  '未知'
+end

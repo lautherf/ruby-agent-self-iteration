@@ -78,4 +78,19 @@ class RegressionGapSpec < Minitest::Test
       assert_equal({ 'role' => '改写后的角色' }, RubyAgent::Doc.parse(path)['solve'])
     end
   end
+
+  # —— 缺口 X：写法名含 ? / !（标点结尾）时，写回必须能定位 def 行 ——
+  # 语文内化挖出的坑：rewrite_lines 用 \b 收尾，`is_hanzi?` 的 ? 与后面 ( 之间无词边界，
+  # 导致 teach 永远返回 false（定位不到 def 行）。修复改为 空白/左括号 收尾。
+  def test_gapX_rewrite_lines_locates_question_mark_method
+    with_plugin_file do |path|
+      File.open(path, 'w') { |f| f.write("def is_hanzi?(c)\n  c == '中'\nend\n") }
+      plugin = build_plugin(path)
+
+      assert quietly { plugin.teach(:is_hanzi?, role: '汉字判断') }
+      assert_equal '汉字判断', RubyAgent::Doc.parse(path).fetch('is_hanzi?')['role'],
+                   '? 结尾的方法名必须能写回 @doc'
+      refute_nil RubyAgent::Doc.parse(path).fetch('is_hanzi?', nil), '解析也要按方法名本身登记'
+    end
+  end
 end

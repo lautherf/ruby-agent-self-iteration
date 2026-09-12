@@ -7,3 +7,7 @@
 # @doc tags: 四则运算,数学,基础算术
 def lesson_001
 end
+# @doc note: 我通过 apply_code 学完了小学语文的 4 个可验证能力：tone_of（声调识别）、is_hanzi?（汉字判断）、hanzi_count（汉字计数）、sentence_type（句类判断）；每个都经隔离 verify 批量算例通过（含边界），并已 teach 写好 @doc 契约
+# @doc tags: 语文,拼音,汉字,句类
+def lesson_002
+end
