@@ -147,4 +147,97 @@ class CodeLoopSpec < Minitest::Test
       assert_equal 5, Object.new.extend(scope).add(2, 3), '落盘后的新方法必须真实可执行'
     end
   end
+
+  # —— 可编程验证器（泛化落地，三件套之一）——
+  # verify 不再只有"单用例字符串相等"：批量 cases / raises 异常边界 / assert 布尔断言，
+  # 让 Agent 能自己定义"什么算对"（如整除 0 该抛错、返回值必须为整数）。
+
+  def test_verify_batch_cases_all_must_pass
+    with_hub do |hub, _path|
+      agent = build_loop(hub, ['Final Answer: ok'])
+      agent.invoke_tool('apply_code', { 'plugin' => 'math', 'method' => 'add',
+                                        'code' => "def add(a, b)\n  a + b\nend" })
+
+      outcome = agent.invoke_tool('verify', { 'plugin' => 'math', 'method' => 'add',
+                                              'cases' => [{ 'args' => [1, 1], 'expected' => 2 },
+                                                          { 'args' => [2, 3], 'expected' => 5 },
+                                                          { 'args' => [-3, 4], 'expected' => 1 }] })
+
+      assert_includes outcome, '验证通过(3 项)'
+      assert_equal :verified, agent.state.code_changes.last[:status]
+      assert agent.events.any? { |e| e[:type] == :verify && e[:ok] && e[:cases] == 3 }
+    end
+  end
+
+  def test_verify_batch_failure_reports_wrong_case_and_rolls_back
+    with_hub do |hub, path|
+      agent = build_loop(hub, ['Final Answer: ok'])
+      agent.invoke_tool('apply_code', { 'plugin' => 'math', 'method' => 'add',
+                                        'code' => "def add(a, b)\n  a - b\nend" })
+
+      outcome = agent.invoke_tool('verify', { 'plugin' => 'math', 'method' => 'add',
+                                              'cases' => [{ 'args' => [3, 2], 'expected' => 1 },
+                                                          { 'args' => [5, 3], 'expected' => 8 }] })
+
+      assert_includes outcome, '验证失败(1/2)'
+      assert_includes outcome, '期望=8'
+      assert_includes outcome, '实际=2'
+      assert_includes outcome, '已自动回滚'
+      assert_equal :rolled_back, agent.state.code_changes.last[:status]
+      refute_includes File.read(path), 'a - b', '失败用例必须触发回滚'
+    end
+  end
+
+  def test_verify_raises_form_covers_zero_division_boundary
+    with_hub do |hub, path|
+      agent = build_loop(hub, ['Final Answer: ok'])
+      agent.invoke_tool('apply_code', { 'plugin' => 'math', 'method' => 'div',
+                                        'code' => "def div(a, b)\n  a / b\nend" })
+
+      good = agent.invoke_tool('verify', { 'plugin' => 'math', 'method' => 'div',
+                                           'cases' => [{ 'args' => [6, 2], 'expected' => 3 },
+                                                       { 'args' => [1, 0], 'raises' => 'ZeroDivisionError' }] })
+      assert_includes good, '验证通过(2 项)', '除 0 边界可用 raises 验证'
+      assert_equal :verified, agent.state.code_changes.last[:status]
+
+      agent.invoke_tool('apply_code', { 'plugin' => 'math', 'method' => 'div',
+                                        'code' => "def div(a, b)\n  0\nend" })
+      bad = agent.invoke_tool('verify', { 'plugin' => 'math', 'method' => 'div',
+                                          'cases' => [{ 'args' => [1, 0], 'raises' => 'ZeroDivisionError' }] })
+      assert_includes bad, '验证失败(1/1)'
+      assert_includes bad, '期望抛 ZeroDivisionError 但正常返回'
+      assert_equal :rolled_back, agent.state.code_changes.last[:status]
+      assert_includes File.read(path), 'a / b', '不抛错的实现被回滚，回到上一个已验证版本'
+    end
+  end
+
+  def test_verify_assert_form_supports_computed_condition
+    with_hub do |hub, _path|
+      agent = build_loop(hub, ['Final Answer: ok'])
+      agent.invoke_tool('apply_code', { 'plugin' => 'math', 'method' => 'half',
+                                        'code' => "def half(n)\n  n / 2\nend" })
+
+      good = agent.invoke_tool('verify', { 'plugin' => 'math', 'method' => 'half',
+                                           'cases' => [{ 'args' => [10], 'expected' => 5 },
+                                                       { 'args' => [7], 'assert' => 'result.is_a?(Integer)' }] })
+      assert_includes good, '验证通过(2 项)'
+      assert_includes good, '断言', '断言用例要留在回灌信息里'
+      assert_equal :verified, agent.state.code_changes.last[:status]
+    end
+  end
+
+  def test_verify_assert_failure_when_condition_false
+    with_hub do |hub, path|
+      agent = build_loop(hub, ['Final Answer: ok'])
+      agent.invoke_tool('apply_code', { 'plugin' => 'math', 'method' => 'half',
+                                        'code' => "def half(n)\n  n / 2\nend" })
+
+      outcome = agent.invoke_tool('verify', { 'plugin' => 'math', 'method' => 'half',
+                                              'cases' => [{ 'args' => [10], 'expected' => 5 },
+                                                          { 'args' => [7], 'assert' => 'result.is_a?(Float)' }] })
+      assert_includes outcome, '验证失败(1/2)'
+      assert_includes outcome, '断言 result.is_a?(Float) 不成立'
+      assert_equal :rolled_back, agent.state.code_changes.last[:status]
+    end
+  end
 end

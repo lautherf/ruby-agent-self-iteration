@@ -38,7 +38,7 @@ PROMPT
       'whoami' => '向 ra 自己的身份契约提问：我是谁、我学过什么、我不能做什么，参数：{}',
       'read_code' => '读取某个方法的当前源码，参数：{"plugin":"插件名","method":"方法名"}',
       'apply_code' => '把方法体整体替换为新代码；方法不存在时自动新增（追加到文件末尾），参数：{"plugin":"插件名","method":"方法名","code":"def 方法名(...)\\n实现\\nend"}。要求 code 定义同名方法，语法错会自动拒绝。',
-      'verify' => '在内存作用域真实运行方法并比对期望值，参数：{"plugin":"插件名","method":"方法名","args":[..],"expected":期望值}。验证失败且之前有 apply_code 时，系统会自动回滚该修改。',
+      'verify' => '在内存作用域真实运行方法并按验证项比对（可编程验证器：支持批量算例 cases=[{args,expected}]、异常边界 raises 期望抛错类名、布尔断言 assert 用表达式以 result 为输入，如 "result.odd?"）。参数：{"plugin":"插件名","method":"方法名","cases":[{"args":[..],"expected":期望值}]} 或单条 {"plugin":..,"method":..,"args":[..],"expected":..,"raises":..,"assert":..}。每项 args 必填，expected/raises/assert 三选一。任一验证项不过即失败，之前有 apply_code 时系统会自动回滚该修改。',
       'teach' => '写回插件方法的 @doc 元数据，参数：{"plugin":"插件名","method":"方法名","role":"..","note":".."}',
       'learn' => '把经验沉淀进知识仓库，参数：{"lesson":"经验文本","tags":"可选标签"}',
       'remember' => '把一条对话写进记忆（结构化数据，经本体论校验：kind/who/status 有受控取值，supersedes 必须指向真实存在的记录 id）。参数：{"kind":"fact|preference|task|event|meta，默认 fact","who":"user|ra|system|tool，默认 ra","note":"内容","status":"stated|confirmed，可选","about":"这条记忆关于谁，可选","supersedes":"被它取代的旧记录 id，可选（修订时用）","tags":"可选标签"}',
@@ -404,25 +404,35 @@ PROMPT
       end
 
       register_tool('verify') do |input|
+        input = {} if input.nil?
         method = (input['method'] || input[:method]).to_s
-        args = Array(input['args'] || input[:args])
-        expected = (input['expected'] || input[:expected]).to_s
         editor = editor_for_plugin(input)
-
         scope = editor.scope
         obj = Object.new.extend(scope)
-        actual = scope.respond_to?(method) ? scope.send(method, *args) : obj.send(method, *args)
 
-        if actual.to_s == expected
+        cases = input['cases'] || input[:cases]
+        forms = if cases
+                  cases.map { |c| (c || {}).transform_keys(&:to_s) }
+                else
+                  [input.reject { |k, _v| %w[plugin method].include?(k.to_s) }.transform_keys(&:to_s)]
+                end
+        raise '缺少验证项：请提供 args+expected、args+raises、args+assert 或 cases 批量算例' if forms.empty?
+
+        details = forms.map { |form| verify_case_run(scope, obj, method, form, editor.path) }
+        failed = details.reject { |d| d[:ok] }
+
+        if failed.empty?
           @pending_change = nil if @pending_change&.[](:method) == method && @pending_change[:editor] == editor
           mark_code_verified(editor_name(input), method)
-          emit(:verify, plugin: editor_name(input), method: method, ok: true, actual: actual.to_s, expected: expected)
-          "验证通过: #{actual}"
+          emit(:verify, plugin: editor_name(input), method: method, ok: true, cases: forms.size,
+                        details: details.map { |d| d[:text] })
+          "验证通过(#{forms.size} 项): #{details.map { |d| d[:text] }.join('; ')}"
         else
           rolled_back = @auto_rollback && rollback_pending(editor_name(input), method)
-          msg = "验证失败: 期望=#{expected} 实际=#{actual}"
+          msg = "验证失败(#{failed.size}/#{forms.size}): #{failed.first[:text]}"
           msg += rolled_back ? '，已自动回滚' : '（未回滚）'
-          emit(:verify, plugin: editor_name(input), method: method, ok: false, actual: actual.to_s, expected: expected, rolled_back: !!rolled_back)
+          emit(:verify, plugin: editor_name(input), method: method, ok: false, actual: failed.first[:actual],
+                        expected: failed.first[:expected], rolled_back: !!rolled_back)
           msg
         end
       end
@@ -485,6 +495,56 @@ PROMPT
 
         emit(:promote, **record.merge(memory: mid))
         "已内化记忆 #{mid} → #{record[:plugin]}##{record[:method]}（记忆已标 confirmed，@doc 溯源 #{mid}）"
+      end
+    end
+
+    # 可编程验证器的单条执行：真实求值 + 三种验证形态（值相等 / 抛错 / 布尔断言）。
+    # 返回值始终是 { ok:, actual:, expected:, text: }，调用方按 failed 汇总决策。
+    def verify_case_run(scope, obj, method, form, path)
+      args = Array(form['args'])
+      arg_text = args.map(&:inspect).join(', ')
+
+      call = proc { scope.respond_to?(method) ? scope.send(method, *args) : obj.send(method, *args) }
+
+      if form.key?('raises')
+        begin
+          actual = call.call
+          { ok: false, actual: actual.inspect,
+            text: "#{method}(#{arg_text}) 期望抛 #{form['raises']} 但正常返回 #{actual.inspect}" }
+        rescue NoMethodError, StandardError => e
+          wanted = Object.const_get(form['raises'].to_s) rescue nil
+          if wanted && e.is_a?(wanted)
+            { ok: true, actual: nil, text: "#{method}(#{arg_text}) 抛 #{e.class} 符合预期" }
+          else
+            { ok: false, actual: e.class.to_s,
+              text: "#{method}(#{arg_text}) 期望抛 #{form['raises']} 实际抛 #{e.class}: #{e.message}" }
+          end
+        end
+      else
+        begin
+          actual = call.call
+          if form.key?('assert')
+            verdict = obj.instance_eval("result = #{actual.inspect}\n(#{form['assert']})", path, 1)
+            if verdict
+              { ok: true, actual: actual.inspect,
+                text: "#{method}(#{arg_text}) 断言 #{form['assert']} 成立 (#{actual.inspect})" }
+            else
+              { ok: false, actual: actual.inspect,
+                text: "#{method}(#{arg_text}) 断言 #{form['assert']} 不成立 (实际 #{actual.inspect})" }
+            end
+          else
+            expected = form['expected'].to_s
+            if actual.to_s == expected
+              { ok: true, actual: actual, text: "#{method}(#{arg_text}) = #{actual}" }
+            else
+              { ok: false, actual: actual, expected: expected,
+                text: "#{method}(#{arg_text}) 期望=#{expected} 实际=#{actual}" }
+            end
+          end
+        rescue NoMethodError, StandardError => e
+          { ok: false, actual: "#{e.class}: #{e.message}",
+            text: "调用 #{method}(#{arg_text}) 抛 #{e.class}: #{e.message}" }
+        end
       end
     end
 
