@@ -264,3 +264,34 @@ end
 def nor(p, q)
   !(p || q)
 end
+# @doc role: 逆否等价律：p→q 当且仅当 ¬q→¬p，对任意真假指派恒成立
+# @doc note: 实现为 (¬p∨q) 与 (q∨¬p) 比较相等，真值表 4 组合全为 true，已通过 verify。
+def law_of_contrapositive(p, q)
+  # 逆否等价律：p→q 当且仅当 ¬q→¬p
+  p_implies_q = !p || q
+  not_q_implies_not_p = q || !p
+  p_implies_q == not_q_implies_not_p
+end
+# @doc role: 德摩根Ⅱ：用 nand 表达 ¬(p∧q) 并验证等价于 ¬p∨¬q，真值表恒成立
+# @doc note: Ruby 实现：校验布尔输入后比较 nand(p,q) 与 (!p||!q)，通过真值表 4 用例 verify。
+def de_morgan_nand(p, q)
+  # 德摩根Ⅱ：¬(p∧q) ≡ ¬p∨¬q，用 nand 表达左侧，右侧展开验证
+  left = nand(p, q)
+  right = !p || !q
+  raise ArgumentError, 'inputs must be boolean' unless [p, q].all? { |x| x.is_a?(TrueClass) || x.is_a?(FalseClass) }
+  left == right
+end
+# @doc role: 吸收律：验证 p∧(p∨q) 与 p 是否恒等价
+# @doc note: 输入为非布尔值抛 ArgumentError；通过真值表验证所有 p/q 组合均返回 true。
+def absorption_law(p, q)
+  raise ArgumentError unless [p, q].all? { |x| x.is_a?(TrueClass) || x.is_a?(FalseClass) }
+  (p && (p || q)) == p
+end
+# @doc role: 排中律：p∨¬p 恒为真（二值逻辑不含第三值）
+# @doc note: 实现为 p || !p，对 true/false 两种指派恒真，已通过 verify。
+def excluded_middle(p)
+  unless p.is_a?(TrueClass) || p.is_a?(FalseClass)
+    raise ArgumentError
+  end
+  p || !p
+end
