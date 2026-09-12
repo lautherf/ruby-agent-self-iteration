@@ -10,12 +10,12 @@
 # @doc motto: 循环往复，持续进化，永不崩盘。
 # @doc since: 2026-09-11
 # @doc params: 我是，list_docs/read_docs/read_code/apply_code/verify/teach/learn/whoami 的工具宿主
+# @doc note: 我的学历、考核成绩与框架教训沉淀在 knowledge 的 lessons（lesson_001 数学 / lesson_002 语文 / lesson_003 自我认知档案）
 def self_intro
 end
 
 # @doc role: 知识沉淀：我读过的一切都沉淀在这里
-# @doc note: 每次任务结束，我通过 learn / IterationLoop 把经验写回 Knowledge 仓库；
-# @doc note: 下一次迭代开始时，这些注释会随 for_llm 注入 system prompt，我从新知识出发
+# @doc note: 档案室在 knowledge 插件：learn 写入、read_docs 读取；每次任务结束我把经验写回，下一轮迭代这些 @doc 随 for_llm 注入 system prompt，我从新知识出发
 # @doc example: 你问我"你学过什么"，我会先 read_docs 看 knowledge 插件的 lessons
 def what_i_learned
 end
