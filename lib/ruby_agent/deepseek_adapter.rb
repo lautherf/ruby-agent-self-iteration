@@ -151,7 +151,10 @@ module RubyAgent
     def validate!(response)
       return if response.status.between?(200, 299)
 
-      raise APIError, "DeepSeek API 返回 #{response.status}: #{truncate(response.body)}"
+      # HTTP response.body 常是 ASCII-8BIT；错误文案和 UTF-8 字面量拼接会炸编码。
+      # normalize 后再拼，同时清洗掉残破字节，确保错误消息必可读。
+      body = response.body.to_s.encode('UTF-8', invalid: :replace, undef: :replace, replace: '?')
+      raise APIError, "DeepSeek API 返回 #{response.status}: #{truncate(body)}"
     end
 
     def parse_json(text)

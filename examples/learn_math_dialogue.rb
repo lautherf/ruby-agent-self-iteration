@@ -25,8 +25,20 @@ STAGES = {
     { name: 'permutation',    sem: '排列数 P(n,k)=n!/(n-k)!，0<=k<=n' },
     { name: 'combination',    sem: '组合数 C(n,k)=n!/(k!(n-k)!)，0<=k<=n' },
     { name: 'arithmetic_sum', sem: '等差数列前 n 项和 S=n(2a1+(n-1)d)/2' }
+  ],
+  '大学' => [
+    { name: 'dot',            sem: '向量点积 a·b=Σ(a_i×b_i)，两个等长数值数组，长度不等抛 ArgumentError' },
+    { name: 'mat_mul',        sem: '矩阵乘法 (A×B)[i][j]=ΣA[i][k]×B[k][j]；A 为 m×n、B 为 n×p，返回 m×p 二维数组，维度不匹配抛 ArgumentError' },
+    { name: 'transpose',      sem: '矩阵转置：m×n 矩阵转成 n×m' },
+    { name: 'vector_norm',    sem: 'L2 范数 √(Σv_i²)，返回浮点数' },
+    { name: 'softmax',        sem: 'softmax(logits)：exp(li)/Σexp(lj)，返回概率数组，元素保留 4 位小数（Float#round(4)），总和≈1' },
+    { name: 'argmax',         sem: '返回数组最大元素的第一个下标；空数组抛 ArgumentError' },
+    { name: 'entropy',        sem: '信息熵 H=-Σ p_i×log2(p_i)，返回浮点数（输入为概率分布 p，和为 1）' },
+    { name: 'cross_entropy',  sem: '交叉熵 -Σ p_i×log2(q_i)，返回浮点数（p 为真实分布、q 为预测分布，等长数组；长度不等抛 ArgumentError）' }
   ]
 }.freeze
+
+DISPLAY = { '初中' => '初中数学', '高中' => '高中数学', '大学' => '大学·LLM基础学科' }.freeze
 
 # 老师的外部验收卷（不给模型）：模型自己写的 verify 只是自证，这里才是复验
 ACCEPT = {
@@ -39,12 +51,29 @@ ACCEPT = {
                   { 'args' => [-1], 'raises' => 'ArgumentError' }],
   'permutation' => [{ 'args' => [5, 2], 'expected' => 20 }, { 'args' => [4, 0], 'expected' => 1 }],
   'combination' => [{ 'args' => [5, 2], 'expected' => 10 }, { 'args' => [4, 4], 'expected' => 1 }],
-  'arithmetic_sum' => [{ 'args' => [1, 1, 10], 'expected' => 55 }, { 'args' => [2, 3, 4], 'expected' => 26 }]
+  'arithmetic_sum' => [{ 'args' => [1, 1, 10], 'expected' => 55 }, { 'args' => [2, 3, 4], 'expected' => 26 }],
+  'dot' => [{ 'args' => [[1, 2, 3], [4, 5, 6]], 'expected' => 32 },
+            { 'args' => [[-1, 2], [-3, 4]], 'expected' => 11 },
+            { 'args' => [[0, 0], [0, 0]], 'expected' => 0 }],
+'mat_mul' => [{ 'args' => [[[1, 2], [3, 4]], [[5, 6], [7, 8]]], 'expected' => [[19, 22], [43, 50]] },
+              { 'args' => [[[1, 0], [0, 1]], [[5, 6], [7, 8]]], 'expected' => [[5, 6], [7, 8]] }],
+  'transpose' => [{ 'args' => [[[1, 2], [3, 4]]], 'expected' => [[1, 3], [2, 4]] },
+                  { 'args' => [[[1, 2, 3]]], 'expected' => [[1], [2], [3]] }],
+  'vector_norm' => [{ 'args' => [[3, 4]], 'expected' => 5.0 }, { 'args' => [[1, 2, 2]], 'expected' => 3.0 },
+                    { 'args' => [[0, 0]], 'expected' => 0.0 }],
+  'softmax' => [{ 'args' => [[0, 0]], 'expected' => [0.5, 0.5] },
+                { 'args' => [[1, 1, 1]], 'expected' => [0.3333, 0.3333, 0.3333] }],
+  'argmax' => [{ 'args' => [[3, 1, 2]], 'expected' => 0 }, { 'args' => [[1, 5, 5]], 'expected' => 1 },
+               { 'args' => [[-2, -1]], 'expected' => 1 }],
+  'entropy' => [{ 'args' => [[0.5, 0.5]], 'expected' => 1.0 }, { 'args' => [[1.0]], 'expected' => 0.0 },
+                { 'args' => [[0.25, 0.25, 0.25, 0.25]], 'expected' => 2.0 }],
+  'cross_entropy' => [{ 'args' => [[0.5, 0.5], [0.5, 0.5]], 'expected' => 1.0 },
+                      { 'args' => [[1.0, 0.0], [1.0, 0.0]], 'expected' => 0.0 }]
 }.freeze
 
 stage_arg = (ARGV[0] || 'all').to_s
 stages = stage_arg == 'all' ? STAGES.keys : [stage_arg]
-abort "阶段只能是 初中/高中/all" unless stages.all? { |s| STAGES.key?(s) }
+abort "阶段只能是 初中/高中/大学/all" unless stages.all? { |s| STAGES.key?(s) }
 
 base_url = ENV['AGNES_BASE_URL'] || 'https://apihub.agnes-ai.com/v1'
 model    = ENV['AGNES_MODEL'] || 'agnes-2.5-flash'
@@ -71,10 +100,10 @@ MAX_ATTEMPTS = 3
 results = []
 stages.each do |stage|
   STAGES[stage].each_with_index do |unit, i|
-    puts "\n#{'=' * 62}\n【老师】#{stage}数学 · 第 #{i + 1} 课：#{unit[:name]}（#{unit[:sem]}）\n#{'=' * 62}"
+    puts "\n#{'=' * 62}\n【老师】#{DISPLAY[stage]} · 第 #{i + 1} 课：#{unit[:name]}（#{unit[:sem]}）\n#{'=' * 62}"
 
     task = <<~TASK
-      你是 ra。老师在教你#{stage}数学，本课要内化的能力是：
+      你是 ra。老师在教你#{DISPLAY[stage]}，本课要内化的能力是：
         方法名：#{unit[:name]}
         语义：#{unit[:sem]}
 
@@ -114,14 +143,14 @@ stages.each do |stage|
     puts "  【老师复验】#{ok ? '√ 通过' : '✗ 未过'}（第 #{attempt} 次尝试）— #{acc}"
   end
 
-  puts "\n#{'=' * 62}\n【老师】#{stage}数学 · 阶段复盘：请自己 learn 沉淀经验\n#{'=' * 62}"
+  puts "\n#{'=' * 62}\n【老师】#{DISPLAY[stage]} · 阶段复盘：请自己 learn 沉淀经验\n#{'=' * 62}"
   before = knowledge.lessons.size
   review_task = <<~TASK
-    你刚学完#{stage}数学。请调用 learn 工具沉淀一条精炼经验：
+    你刚学完#{DISPLAY[stage]}。请调用 learn 工具沉淀一条精炼经验：
       - 方法名清单 + 每个方法的语义要点与关键边界（0 / 负数 / 异常）；
       - 学习过程踩过的 1-2 个坑。
     ⚠️ 硬性要求：经验正文控制在 450 字符以内（知识库有长度闸门，超过会被拒绝），写要点、别写长文。
-    tags 用 "#{stage}数学,知识沉淀"。调用 learn 后，用 Final Answer 报告经验编号。
+    tags 用 "#{DISPLAY[stage]},知识沉淀"。调用 learn 后，用 Final Answer 报告经验编号。
   TASK
   review_ok = false
   MAX_ATTEMPTS.times do |attempt|
@@ -139,7 +168,7 @@ stages.each do |stage|
         - 一句话方法清单（方法名逗号分隔）；
         - 每个方法只写最关键边界；
         - 全程正文 ≤400 字，禁止 markdown 长文。
-      tags 用 "#{stage}数学,知识沉淀"。调用 learn 后 Final Answer 报告编号。
+      tags 用 "#{DISPLAY[stage]},知识沉淀"。调用 learn 后 Final Answer 报告编号。
     TASK
   end
   results << [stage, 'learn复盘', review_ok, 0, review_ok ? 'ok' : "仍失败(经验 #{before}→#{knowledge.lessons.size})"]

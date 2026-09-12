@@ -23,3 +23,11 @@ end
 # @doc tags: 高中数学,知识沉淀
 def lesson_005
 end
+# @doc note: 矩阵乘法 mat_mul(a, b) 实现要点：1) 先校验输入为 Array；2) 处理空矩阵情况（a 为空返回 []）；3) 检查维度匹配：a 的列数 n 必须等于 b 的行数；4) 遍历 i, j, k 三层循环计算点积；5) 维度不匹配抛 ArgumentError。边界情况：空矩阵返回空数组，负数正常参与运算。
+# @doc tags: 矩阵运算,二维数组,乘法,边界处理
+def lesson_006
+end
+# @doc note: 方法清单：add,sub,mul,div,tone_of,is_hanzi?,hanzi_count,sentence_type,gcd,is_prime?,abs,lcm,factorial,permutation,combination,arithmetic_sum,mat_mul,transpose,softmax,cross_entropy。关键边界：div除数0抛ArgumentError；tone_of无声调返0；is_hanzi?判Unicode CJK区；gcd欧几里得算法自动取绝对值；is_prime?非>=2整数返false；factorial负数抛ArgumentError；permutation/combination要求0<=k<=n；arithmetic_sum n<0抛错；mat_mul维度不匹配抛错；softmax空数组返[]；cross_entropy长度不等或负元素抛错。教训：doc写回须匹配方法名真实形态（含?/!后缀及self.前缀），agent输入解析应容忍模型臆想Observation续行，提取首个配平JSON对象。
+# @doc tags: 大学·LLM基础学科,知识沉淀
+def lesson_007
+end

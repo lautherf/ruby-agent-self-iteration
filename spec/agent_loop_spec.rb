@@ -242,6 +242,15 @@ class AgentLoopSpec < Minitest::Test
                  '长笔记里的裸换行应以 \\n 转义后解析，内容不丢')
   end
 
+  def test_parse_input_falls_back_to_raw_when_unrecoverable
+    agent = build_loop(['Final Answer: ok'])
+    input = "{\"a\":\"he said \"hi\" now\nnext line\"}"
+
+    got = agent.send(:parse_input, input)
+
+    assert_equal({ 'value' => input }, got, '值里夹未转义引号等无法修复时，退化为 {value: raw}，绝不能抛异常')
+  end
+
   def test_sync_reflects_newly_mounted_plugin
     agent = build_loop(['Final Answer: ok'])
 
