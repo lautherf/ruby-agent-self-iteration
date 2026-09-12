@@ -33,8 +33,8 @@ PROMPT
     # 真实模型（如 Agnes）常因"自认无工具"而拒绝执行；
     # 注入明确的工具清单 + 调用约定，能显著提高遵循率。
     TOOL_HINTS = {
-      'list_docs' => '查看全部插件的 @doc 知识，参数：{}',
-      'read_docs' => '查看全部插件的 @doc 知识，参数：{}',
+      'list_docs' => '查看全部插件的 @doc 知识（含记忆 doc 视图与经验），参数：{}',
+      'read_docs' => '查看全部插件的 @doc 知识（含记忆与经验），参数：{}',
       'whoami' => '向 ra 自己的身份契约提问：我是谁、我学过什么、我不能做什么，参数：{}',
       'read_code' => '读取某个方法的当前源码，参数：{"plugin":"插件名","method":"方法名"}',
       'apply_code' => '把方法体整体替换为新代码；方法不存在时自动新增（追加到文件末尾），参数：{"plugin":"插件名","method":"方法名","code":"def 方法名(...)\\n实现\\nend"}。要求 code 定义同名方法，语法错会自动拒绝。',
@@ -42,7 +42,8 @@ PROMPT
       'teach' => '写回插件方法的 @doc 元数据，参数：{"plugin":"插件名","method":"方法名","role":"..","note":".."}',
       'learn' => '把经验沉淀进知识仓库，参数：{"lesson":"经验文本","tags":"可选标签"}',
       'remember' => '把一条对话写进记忆（结构化数据，经本体论校验：kind/who/status 有受控取值，supersedes 必须指向真实存在的记录 id）。参数：{"kind":"fact|preference|task|event|meta，默认 fact","who":"user|ra|system|tool，默认 ra","note":"内容","status":"stated|confirmed，可选","about":"这条记忆关于谁，可选","supersedes":"被它取代的旧记录 id，可选（修订时用）","tags":"可选标签"}',
-      'read_memory' => '按内容召回记忆中的对话，参数：{"query":"关键词，可空","limit":"条数，默认 5"}'
+      'read_memory' => '按内容召回记忆中的对话，参数：{"query":"关键词，可空","limit":"条数，默认 5"}',
+      'promote' => '把一条确证记忆内化成可执行方法（记忆运转）：@doc 溯源 memory id，记忆标 confirmed。参数：{"memory":"记忆 id","plugin":"目标插件，默认 ra","method":"方法名","code":"def 方法名(...)\\n实现\\nend"}'
     }.freeze
 
     # 运行状态快照
@@ -212,7 +213,9 @@ PROMPT
       end
       if @memory
         mem = @memory.for_llm
-        parts << "记忆（ra 的对话流水与经验，可直接引用）:\n#{mem}" unless mem.empty?
+        unless mem.empty?
+          parts << "记忆（最近对话，可引用；全部记忆可经 read_docs 或 read_memory 主动查阅，记忆可 promote 成方法）:\n#{mem}"
+        end
       end
       parts.join("\n\n")
     end
@@ -340,6 +343,25 @@ PROMPT
       end
     end
 
+    # apply_code 与 promote 共用的写方法路径：试编译 → 原子落盘 → 记入 code_changes。
+    def perform_apply(input)
+      method = (input['method'] || input[:method]).to_s
+      code = input['code'] || input[:code] || input['source'] || ''
+      editor = editor_for_plugin(input)
+      ok = if editor.read_method(method).nil?
+             editor.add(method, code)      # 不存在 → 追加新方法（自改长出能力）
+           else
+             editor.replace(method, code)  # 已存在 → 整体替换
+           end
+      raise "替换失败：语法错误或方法名不匹配 #{method}" unless ok
+
+      @pending_change = { plugin: editor_name(input), method: method, editor: editor }
+      record = { plugin: editor_name(input), method: method, status: :applied }
+      @state.code_changes << record
+      emit(:code_change, **record)
+      record
+    end
+
     def register_default_tools
       register_tool('list_docs') { |_input| @hub.for_llm }
       register_tool('read_docs') { |_input| @hub.for_llm }
@@ -377,21 +399,8 @@ PROMPT
       end
 
       register_tool('apply_code') do |input|
-        method = (input['method'] || input[:method]).to_s
-        code = input['code'] || input[:code] || input['source'] || ''
-        editor = editor_for_plugin(input)
-        ok = if editor.read_method(method).nil?
-               editor.add(method, code)      # 不存在 → 追加新方法（自改长出能力）
-             else
-               editor.replace(method, code)  # 已存在 → 整体替换
-             end
-        raise "替换失败：语法错误或方法名不匹配 #{method}" unless ok
-
-        @pending_change = { plugin: editor_name(input), method: method, editor: editor }
-        record = { plugin: editor_name(input), method: method, status: :applied }
-        @state.code_changes << record
-        emit(:code_change, **record)
-        "已应用新实现到 #{record[:plugin]}##{method}"
+        record = perform_apply(input || {})
+        "已应用新实现到 #{record[:plugin]}##{record[:method]}"
       end
 
       register_tool('verify') do |input|
@@ -450,6 +459,32 @@ PROMPT
           state = t[:status] && t[:status] != 'stated' ? "[#{t[:status]}]" : ''
           "- #{t[:id]}#{state}[#{t[:who]}] #{t[:note]}#{rel}"
         end.join("\n")
+      end
+
+      # 记忆运转的"化"侧：把一条确证记忆内化成可执行方法（apply_code/verify 同机制）。
+      # @doc 溯源 memory id；记忆状态升 confirmed —— 记忆最终变成能跑的方法。
+      register_tool('promote') do |input|
+        input = {} if input.nil?
+        mid = (input['memory'] || input[:memory]).to_s
+        rec = @memory.record(mid)
+        raise "未找到记忆 #{mid}" unless rec
+        raise "记忆 #{mid}（#{rec[:status]}）不可内化：已废弃" if rec[:status] == 'superseded'
+
+        code = (input['code'] || input[:code]).to_s
+        method = (input['method'] || input[:method]).to_s
+        plugin = (input['plugin'] || input[:plugin] || 'ra').to_s
+        raise '缺少方法名与实现（method + code）' if method.empty? || code.empty?
+
+        record = perform_apply('plugin' => plugin, 'method' => method, 'code' => code)
+        @memory.confirm!(mid)
+        begin
+          @hub.teach(plugin, method, memory: mid)
+        rescue StandardError
+          nil
+        end
+
+        emit(:promote, **record.merge(memory: mid))
+        "已内化记忆 #{mid} → #{record[:plugin]}##{record[:method]}（记忆已标 confirmed，@doc 溯源 #{mid}）"
       end
     end
 

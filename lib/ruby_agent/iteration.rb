@@ -41,6 +41,7 @@ module RubyAgent
       @results = []
       @agents = []
       mount_knowledge
+      mount_memory_doc
     end
 
     # 顺序执行多个任务；每轮结束沉淀经验 + 折叠旧对话，下一轮自动读到上一轮知识。
@@ -75,12 +76,27 @@ module RubyAgent
       @hub.mount(DocPlugin.new(Knowledge::NAME, @knowledge.path).load!)
     end
 
-    # Sprint 7：每轮结束折叠窗口外的旧对话（遗忘 = 重构）。
-    # 记忆不再挂进 DocHub —— AgentLoop 直接从 @memory.for_llm 注入 system prompt。
+    # 记忆运转（后续）—— 让记忆通过 doc 通道活起来，而不是只有被动注入：
+    # 1. 挂 MemoryDoc 视图进 DocHub：list_docs / read_docs 与知识同一界面，可主动查阅记忆。
+    # 2. 每轮折叠出的经验 lesson 桥进 Knowledge（lessons.rb @doc 存根）：经验跟着 doc 血管
+    #    进下一轮，随时可被 apply_code/promote 升级成真方法 —— 记忆最终运转成代码。
+    def mount_memory_doc
+      return unless @memory
+      return if @hub.get(MemoryDoc::NAME)
+
+      @hub.mount(MemoryDoc.new(@memory))
+    end
+
     def consolidate_memory
       return unless @memory
 
-      @memory.consolidate!(keep: @memory_keep, &@summarize)
+      lesson_id = @memory.consolidate!(keep: @memory_keep, &@summarize)
+      return unless lesson_id
+
+      lesson = @memory.lessons.find { |l| l[:id] == lesson_id }
+      return unless lesson
+
+      @knowledge.add("记忆折叠：#{lesson[:note]}", tags: 'memory')
     end
 
     def sediment(state)

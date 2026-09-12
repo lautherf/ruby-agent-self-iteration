@@ -122,15 +122,22 @@ module RubyAgent
 
     # 标记某条已废弃（变：真相被更新取代时不覆盖原件，只改状态）
     def mark_superseded!(id)
-      @mutex.synchronize do
-        rec = @data['turns'].find { |r| r['id'] == id } || @data['lessons'].find { |r| r['id'] == id }
-        return false unless rec
+      update_status!(id, 'superseded')
+    end
 
-        rec['status'] = 'superseded'
-        write_atomic(@data)
-      end
-    rescue StandardError
-      false
+    # 确认某条为真（真：ra 亲自验证/内化后，把 stated 升为 confirmed）
+    def confirm!(id)
+      update_status!(id, 'confirmed')
+    end
+
+    # 取任一记录（含已废弃原件），本原视角：{ id:, kind:, who:, about:, note:, status:, since:, tags:, supersedes:, from: }
+    def record(id)
+      rec = @data['turns'].find { |r| r['id'] == id.to_s } || @data['lessons'].find { |r| r['id'] == id.to_s }
+      return nil unless rec
+
+      # 与原文件字段顺序一致地还原
+      %i[id kind who about note status since tags supersedes from]
+        .each_with_object({}) { |k, h| h[k] = rec[k.to_s] }
     end
 
     # 修订（变的标准入口）：旧记录标 superseded，同时写入新记录并指向旧记录。
@@ -161,6 +168,18 @@ module RubyAgent
     # 最近若干条记忆（供 AgentLoop 直接注入 system prompt；跳过已废弃，标出可信度）
     def recent(limit: 8)
       recall(limit: limit)
+    end
+
+    # doc 视图（运转读侧）：跳过已废弃记录，渲染成 list_docs/read_docs 能读的活卡。
+    # 数据仍在 memory.yaml；这里是运行时经 doc 通道主动查阅记忆的入口与知识同一界面。
+    def docs
+      list = (turns + lessons).reject { |r| r[:status] == 'superseded' }
+      list.map do |r|
+        attrs = r.slice(:kind, :who, :about, :note, :tags, :supersedes, :from)
+                 .reject { |_k, v| v.nil? || (v.respond_to?(:empty?) && v.empty?) }
+                 .reject { |k, v| k == :status && v == 'stated' }
+        [r[:id], attrs]
+      end.to_h
     end
 
     # 折叠：把窗口外的老对话压缩成一条 lesson（遗忘=重构）。
@@ -272,6 +291,18 @@ module RubyAgent
       entity[:table].sub(/s\z/, '')
     end
 
+    def update_status!(id, status)
+      @mutex.synchronize do
+        rec = @data['turns'].find { |r| r['id'] == id.to_s } || @data['lessons'].find { |r| r['id'] == id.to_s }
+        return false unless rec
+
+        rec['status'] = status
+        write_atomic(@data)
+      end
+    rescue StandardError
+      false
+    end
+
     def known_id?(id)
       id = id.to_s
       @data['turns'].any? { |r| r['id'] == id } || @data['lessons'].any? { |r| r['id'] == id }
@@ -349,6 +380,40 @@ module RubyAgent
 
     def marshal
       @data.transform_values { |rows| rows.map(&:dup) }
+    end
+  end
+
+  # MemoryDoc —— 记忆的 doc 视图（记忆运转的"读"侧）。
+  #
+  # 记忆之源仍是 memory.yaml 结构化数据；这个视图让记忆通过 doc 通道运转起来：
+  # 挂进 DocHub 后，list_docs / read_docs 就能像读知识一样主动查阅记忆，
+  # 与知识共用同一套 @doc 界面（不再只有被动注入）。
+  #
+  # 注意：它只读，登记的是"记忆条目"，不是真实方法（read_code 会落空，属正常）。
+  class MemoryDoc
+    NAME = 'memory'
+
+    attr_reader :name, :memory
+
+    def initialize(memory)
+      @name = NAME
+      @memory = memory
+    end
+
+    def registry
+      @memory.docs
+    end
+
+    def for_llm
+      { plugin: @name, methods: registry }
+    end
+
+    def load!
+      self
+    end
+
+    def version
+      nil
     end
   end
 end

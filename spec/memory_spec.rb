@@ -222,4 +222,46 @@ class MemorySpec < Minitest::Test
       YAML.safe_load(File.read(path), permitted_classes: [Symbol], aliases: false)
     end
   end
+
+  def test_docs_renders_active_records_as_doc_view
+    with_memory do |mem, _path|
+      old = mem.add_turn(who: 'user', note: '用户喜欢蓝色', kind: 'preference')
+      mem.add_turn(who: 'user', note: '项目名是 weixin', kind: 'fact')
+      mem.revise!(old, note: '用户改主意了，现在喜欢绿色', kind: 'preference')
+
+      docs = mem.docs
+      refute_includes docs.keys, old, 'doc 视图跳过已废弃记录'
+      assert_equal '用户改主意了，现在喜欢绿色', docs['turn_003'][:note]
+      assert_equal old, docs['turn_003'][:supersedes], '仍在链头上的新记录保留 supersedes 溯源'
+      assert_equal 2, docs.size
+    end
+  end
+
+  def test_confirm_and_record
+    with_memory do |mem, _path|
+      id = mem.add_turn(who: 'ra', note: '我验证过了', status: 'stated')
+
+      rec = mem.record(id)
+      assert_equal id, rec[:id]
+      assert_equal 'stated', rec[:status]
+
+      assert mem.confirm!(id)
+      assert_equal 'confirmed', mem.record(id)[:status]
+      assert_equal false, mem.confirm!('turn_999'), '不存在的 id 返回 false'
+    end
+  end
+
+  def test_memory_doc_plugin_for_llm_shape
+    with_memory do |mem, _path|
+      mem.add_turn(who: 'user', note: '项目名是 weixin', tags: ['project'])
+
+      doc = RubyAgent::MemoryDoc.new(mem)
+      payload = doc.for_llm
+      assert_equal 'memory', doc.name
+      assert_equal 'memory', payload[:plugin]
+      entry = payload[:methods]['turn_001']
+      assert_equal '项目名是 weixin', entry[:note]
+      assert_equal ['project'], entry[:tags]
+    end
+  end
 end

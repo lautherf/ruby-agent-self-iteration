@@ -30,9 +30,12 @@ module RubyAgent
       plugin
     end
 
-    # 挂载（兼容旧用法 mount(plugin) + 新用法 mount(name, version:)）
+    # 挂载（兼容旧用法 mount(plugin) + 新用法 mount(name, version:)；
+    # 也接受任何提供 name + for_llm 的 doc 对象 —— 一切皆插件，不问出身）
     def mount(plugin_or_name, version: nil)
       if plugin_or_name.is_a?(DocPlugin)
+        register(plugin_or_name)
+      elsif plugin_or_name.respond_to?(:name) && plugin_or_name.respond_to?(:for_llm)
         register(plugin_or_name)
       else
         if version

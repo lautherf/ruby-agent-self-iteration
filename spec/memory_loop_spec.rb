@@ -118,7 +118,83 @@ class MemoryLoopSpec < Minitest::Test
       agent.run('你是谁')
 
       system = agent.llm.calls.first[:messages].find { |m| m[:role] == 'system' }[:content]
-      assert_includes system, '记忆注入验证', '记忆直接从 Memory#for_llm 注入 system prompt，不再经 DocPlugin'
+      assert_includes system, '记忆注入验证', '记忆从 Memory#for_llm 注入 system prompt（暖启动）'
+      assert_includes system, 'promote'
+    end
+  end
+
+  def test_iteration_mounts_memory_doc_view_into_doc_hub
+    Dir.mktmpdir('iter3') do |dir|
+      hub = RubyAgent::DocHub.new
+      knowledge = RubyAgent::Knowledge.new(File.join(dir, 'lessons.rb'))
+      memory = RubyAgent::Memory.new(File.join(dir, 'memory.rb'))
+      memory.add_turn(who: 'user', note: '我偏好蓝色', kind: 'preference')
+
+      iteration = RubyAgent::IterationLoop.new(
+        hub: hub, knowledge: knowledge, memory: memory,
+        builder: proc do
+          RubyAgent::AgentLoop.new(hub: hub, knowledge: knowledge, memory: memory,
+                                   llm: RubyAgent::MockLLM.new(['Final Answer: 好']))
+        end
+      )
+
+      plugin = hub.get('memory')
+      refute_nil plugin, '记忆经 MemoryDoc 视图挂进 DocHub'
+      assert_equal 'memory', plugin.name
+      assert plugin.for_llm[:methods].key?('turn_001')
+      assert hub.for_llm.any? { |doc| doc[:plugin] == 'memory' }, 'list_docs 与知识同一界面可读到记忆'
+    end
+  end
+
+  def test_folded_lesson_bridges_into_knowledge
+    Dir.mktmpdir('iter4') do |dir|
+      hub = RubyAgent::DocHub.new
+      knowledge = RubyAgent::Knowledge.new(File.join(dir, 'lessons.rb'))
+      memory = RubyAgent::Memory.new(File.join(dir, 'memory.rb'))
+      6.times { |i| memory.add_turn(who: 'user', note: "旧对话 #{i}", tags: 'old') }
+
+      iteration = RubyAgent::IterationLoop.new(
+        hub: hub, knowledge: knowledge, memory: memory, memory_keep: 2,
+        summarize: ->(batch) { "折叠了 #{batch.size} 条旧对话" },
+        builder: proc do
+          RubyAgent::AgentLoop.new(hub: hub, knowledge: knowledge, memory: memory,
+                                   llm: RubyAgent::MockLLM.new(['Final Answer: 好']))
+        end
+      )
+
+      iteration.run(['第一轮'])
+
+      assert_equal 2, memory.turns.size
+      assert_includes memory.lessons.map { |l| l[:note] }.join, '折叠了 5 条旧对话'
+      notes = knowledge.lessons.map { |l| l[:note] }.join
+      assert_includes notes, '记忆折叠', '折叠经验经 doc 血管进入 Knowledge（@doc 存根），记忆才运转进下一轮'
+      assert_includes notes, '折叠了 5 条旧对话'
+    end
+  end
+
+  def test_promote_internalizes_memory_into_runnable_method
+    with_plugin_file do |ra_path|
+      data_dir = Dir.mktmpdir('prom')
+      memory = RubyAgent::Memory.new(File.join(data_dir, 'memory.yaml'))
+      hub = RubyAgent::DocHub.new
+      hub.mount(RubyAgent::DocPlugin.new('ra', ra_path).load!)
+      agent = RubyAgent::AgentLoop.new(hub: hub, llm: RubyAgent::MockLLM.new(['Final Answer: ok']), memory: memory)
+
+      agent.invoke_tool('remember', { 'who' => 'user', 'note' => '用户偏好绿色', 'kind' => 'preference' })
+      outcome = agent.invoke_tool('promote', {
+                                    'memory' => 'turn_001', 'plugin' => 'ra', 'method' => 'preferred_color',
+                                    'code' => "def preferred_color\n  'green'\nend"
+                                  })
+
+      assert_includes outcome, 'preferred_color'
+      assert_equal 'confirmed', memory.load!.record('turn_001')[:status], '内化后记忆升为 confirmed'
+
+      plugin = hub['ra'].load!
+      assert plugin.registry['preferred_color']['memory'] == 'turn_001', '@doc 溯源记忆 id'
+      src = File.read(ra_path)
+      assert_includes src, 'preferred_color', '记忆最终变成能跑的方法（写进插件文件）'
+    ensure
+      FileUtils.remove_entry(data_dir) if data_dir && Dir.exist?(data_dir)
     end
   end
 
