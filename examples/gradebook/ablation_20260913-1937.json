@@ -1,0 +1,71 @@
+{
+  "generated_at": "2026-09-13T19:37:37+08:00",
+  "model": "agnes-2.5-flash",
+  "benchmark_size": 3,
+  "results": [
+    {
+      "config": "cfg0_裸LLM",
+      "score": 3,
+      "gcd-12-18": {
+        "ok": true,
+        "answer": "6"
+      },
+      "xor-tt": {
+        "ok": true,
+        "answer": "true"
+      },
+      "factorial-6": {
+        "ok": true,
+        "answer": "720"
+      }
+    },
+    {
+      "config": "cfg1_+ra方法库",
+      "score": 3,
+      "gcd-12-18": {
+        "ok": true,
+        "answer": "6"
+      },
+      "xor-tt": {
+        "ok": true,
+        "answer": "true"
+      },
+      "factorial-6": {
+        "ok": true,
+        "answer": "720"
+      }
+    },
+    {
+      "config": "cfg2_+lessons",
+      "score": 3,
+      "gcd-12-18": {
+        "ok": true,
+        "answer": "6"
+      },
+      "xor-tt": {
+        "ok": true,
+        "answer": "true"
+      },
+      "factorial-6": {
+        "ok": true,
+        "answer": "720"
+      }
+    },
+    {
+      "config": "cfg3_全量",
+      "score": 3,
+      "gcd-12-18": {
+        "ok": true,
+        "answer": "6"
+      },
+      "xor-tt": {
+        "ok": true,
+        "answer": "true"
+      },
+      "factorial-6": {
+        "ok": true,
+        "answer": "720"
+      }
+    }
+  ]
+}

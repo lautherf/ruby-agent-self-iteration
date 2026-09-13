@@ -1,0 +1,119 @@
+{
+  "generated_at": "2026-09-13T19:40:53+08:00",
+  "model": "agnes-2.5-flash",
+  "benchmark_size": 6,
+  "results": [
+    {
+      "config": "cfg0_裸LLM",
+      "score": 5,
+      "gcd-12-18": {
+        "ok": true,
+        "answer": "6"
+      },
+      "combination-40-20": {
+        "ok": true,
+        "answer": "137846528820"
+      },
+      "lcm-35-49": {
+        "ok": true,
+        "answer": "245"
+      },
+      "vec-norm-130": {
+        "ok": true,
+        "answer": "13"
+      },
+      "div-zero": {
+        "ok": false,
+        "answer": "ZeroDivisionError"
+      },
+      "prime-97": {
+        "ok": true,
+        "answer": "true"
+      }
+    },
+    {
+      "config": "cfg1_+ra方法库",
+      "score": 6,
+      "gcd-12-18": {
+        "ok": true,
+        "answer": "6"
+      },
+      "combination-40-20": {
+        "ok": true,
+        "answer": "137846528820"
+      },
+      "lcm-35-49": {
+        "ok": true,
+        "answer": "245"
+      },
+      "vec-norm-130": {
+        "ok": true,
+        "answer": "13"
+      },
+      "div-zero": {
+        "ok": true,
+        "answer": "ArgumentError"
+      },
+      "prime-97": {
+        "ok": true,
+        "answer": "true"
+      }
+    },
+    {
+      "config": "cfg2_+lessons",
+      "score": 6,
+      "gcd-12-18": {
+        "ok": true,
+        "answer": "6"
+      },
+      "combination-40-20": {
+        "ok": true,
+        "answer": "137846528820 137846528820"
+      },
+      "lcm-35-49": {
+        "ok": true,
+        "answer": "245"
+      },
+      "vec-norm-130": {
+        "ok": true,
+        "answer": "13"
+      },
+      "div-zero": {
+        "ok": true,
+        "answer": "ArgumentError"
+      },
+      "prime-97": {
+        "ok": true,
+        "answer": "true"
+      }
+    },
+    {
+      "config": "cfg3_全量",
+      "score": 6,
+      "gcd-12-18": {
+        "ok": true,
+        "answer": "6"
+      },
+      "combination-40-20": {
+        "ok": true,
+        "answer": "137846528820"
+      },
+      "lcm-35-49": {
+        "ok": true,
+        "answer": "245"
+      },
+      "vec-norm-130": {
+        "ok": true,
+        "answer": "13"
+      },
+      "div-zero": {
+        "ok": true,
+        "answer": "ArgumentError"
+      },
+      "prime-97": {
+        "ok": true,
+        "answer": "true"
+      }
+    }
+  ]
+}
