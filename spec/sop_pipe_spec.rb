@@ -27,6 +27,31 @@ class SopPipeSpec < Minitest::Test
     assert j.fault_hit && j.verify_hit && j.claimed_aligned
   end
 
+  def test_multi_tag_hits_when_expected_subset_match
+    # 复合错位"一词多义×组块"：只要期望 ∈ 标签集即可 PASS（评审学调整，不注水）
+    stage1 = { 'fault_type' => '组块歧义,一词多义' }
+    j = SopPipe.judge(stage1, nil, '组块歧义')
+    assert j.pass, "多标签含期望应 PASS：#{j.diag}"
+    assert j.fault_hit
+  end
+
+  def test_multi_tag_still_fails_without_expected
+    stage1 = { 'fault_type' => '一词多义,组块歧义' }
+    stage2 = { 'premises' => [['imp', 'A', 'B'], 'B'], 'conclusion' => 'A', 'claimed' => 'not_entailed' }
+    j = SopPipe.judge(stage1, stage2, '因果混淆')
+    refute j.pass
+    refute j.fault_hit
+  end
+
+  def test_multi_tag_zero_tolerance_for_oob_words
+    # 白名单外自创词哪怕绑了合法标签也必须红（防"自创词+挡箭牌"作弊）
+    stage1 = { 'fault_type' => '三段论滥用,没见过的新类型' }
+    stage2 = { 'premises' => [['imp', 'A', 'B'], 'B'], 'conclusion' => 'A', 'claimed' => 'not_entailed' }
+    j = SopPipe.judge(stage1, stage2, '三段论滥用')
+    refute j.pass
+    refute j.fault_hit
+  end
+
   def test_fail_when_fault_tag_skips_whitelist
     stage1 = { 'fault_type' => '自创类型词', 'hidden_premise' => '…' }
     stage2 = { 'premises' => [['imp', 'A', 'B'], 'B'], 'conclusion' => 'A', 'claimed' => 'not_entailed' }

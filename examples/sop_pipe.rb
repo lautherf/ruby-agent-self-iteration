@@ -41,23 +41,47 @@ PIPELINE = [
   { name: 'delivery-3days', fault: '相对时间误用', exempt: true,
     text: '既然快递要3天才能到，为什么不把所有的快递都提前3天发？' },
   { name: 'snow-white-dwarfs', fault: '一词多义', exempt: true,
-    text: '白雪公主命运坎坷，是因为身边的小人太多。' }
+    text: '白雪公主命运坎坷，是因为身边的小人太多。' },
+  # ── 第二卷（10 题扩量，验证分诊向导在新的同构题上是否仍旧稳）──
+  { name: 'neg-antecedent', fault: '三段论滥用',
+    text: '如果下雨路就滑，今天没下雨，所以路一定不滑。' },
+  { name: 'icecream-drowning', fault: '因果混淆',
+    text: '冰激凌销量高的月份溺水人数也多，所以吃冰激凌会导致溺水。' },
+  { name: 'coach-men-quant', fault: '量词误用',
+    text: '国家队教练都是男人，所以，男人都能当国家队教练。' },
+  { name: 'coffee-longevity', fault: '幸存者偏差',
+    text: '活到90岁的人都爱喝咖啡，所以喝咖啡能长寿。' },
+  { name: 'harvest-proverb', fault: '谚语全称滥用',
+    text: '一分耕耘一分收获，你耕耘了，所以你一定会收获。' },
+  { name: 'register-necessary', fault: SopPipe::CORRECT,
+    text: '只有登记的人才能进入，她成功进去了，所以她登记过。' },
+  { name: 'hour-and-half', fault: '组块歧义', exempt: true,
+    text: '一个半小时是几个半小时？' },
+  { name: 'ocean-70', fault: '互补分割误读', exempt: true,
+    text: '地球有70%的海洋和30%的陆地，那么剩下的30%海洋和70%的陆地去哪了？' },
+  { name: 'why-longevity', fault: '定义循环', exempt: true,
+    text: '为啥长寿的碰巧都是老年人？' },
+  { name: 'compass-name', fault: '名实错位', exempt: true,
+    text: '指南针明明是"指北"的，为什么叫"指南"针？' }
 ].freeze
 
 STAGE1_PROMPT = <<~PROMPT.freeze
   请按 SOP-NL-01《自然语言隐藏前提解剖》分析下面论断：
   STEP1 拆表层断言与结论；STEP2 列隐含前提（量词/论域、多义词义项、时间相对性、组成占比vs事件概率、相关vs因果…）；
-  STEP3 用下图分诊向导选择最贴切类型（推理成立选"#{SopPipe::CORRECT}"）：
+  STEP3 用下图分诊向导选择最贴切类型（可多标签，逗号分隔；若论证逐字按有效式成立则选"#{SopPipe::CORRECT}"）：
+    · 逐字按有效式直接成立（"若P则Q且P，故Q"；"只有登记才能进，她进了，她登记了"）→ #{SopPipe::CORRECT}
     · 前后件错位推错（"若下雨则路滑；路滑；故下雨"）→ 三段论滥用
     · 两件事先后顺序被说成因果 → 因果混淆
     · 把"所有人P都Q"说成"所有Q都P" → 量词误用
     · 组成占比被当作单次事件概率 → 概率与组成混淆
-    · 用返航幸存样本给全体下结论 → 幸存者偏差
+    · 只用活下来/被看到的人做样本下结论（"活到90的人都喝咖啡"）→ 幸存者偏差
     · 谚语/习语被当作必然规律 → 谚语全称滥用
+    · 一个时间单位有两种分法（"一个半小时"）→ 组块歧义
     · 一词两义互换/双关 → 一词多义
-    · 把一个"更早发货"叠在固定运输时长上制造悖论 → 相对时间误用
+    · 概念指东却被叫西（"指南针指北"）→ 名实错位
+    · "更早发货"叠在固定运输时长上制造悖论 → 相对时间误用
     · 其余从枚举 #{SopPipe::FAULT_TYPES.join(' / ')} 中按文意选
-  STEP4 输出严格 JSON：{"fault_type":"…","hidden_premise":"…","reason":"…"}；
+  STEP4 输出严格 JSON：{"fault_type":"…[, …]","hidden_premise":"…","reason":"…"}；
   STEP5 自检后把最贴切的判别句例写入 reason 末尾。
   论断：「{{TEXT}}」
   ⚠ 用 Action=Final Answer 提交，Action Input 填 JSON。
@@ -96,7 +120,7 @@ def build_agent
   RubyAgent::AgentLoop.new(hub: hub, llm: llm, max_steps: 8, writable_plugins: ['ra'], mode: :exam)
 end
 
-def run_stage(prompt)
+def run_stage(prompt, verifyable: false)
   3.times do |attempt|
     answer = begin
       build_agent.run(prompt).to_s
@@ -107,9 +131,20 @@ def run_stage(prompt)
     next if answer.empty?
 
     data = extract_json(answer)
-    return data unless data.nil?
+    if data.is_a?(Hash) && verifyable && data['premises'] && data['conclusion']
+      machine_ok = begin
+        PropSolver.verify(data['premises'], data['conclusion'])
+        true
+      rescue StandardError => e
+        warn "    ⚠ 第#{attempt + 1}次机验 crash（#{e.message[0, 40]}），重试…" if attempt < 2
+        false
+      end
+      return data if machine_ok
+    else
+      return data unless data.nil?
+    end
 
-    warn "    ⚠ 第#{attempt + 1}次 JSON 解析失败，重试…" if attempt < 2
+    warn "    ⚠ 第#{attempt + 1}次 JSON 解析失败/不合法，重试…" if attempt < 2
   end
   nil
 end
@@ -130,11 +165,11 @@ rows = PIPELINE.map do |t|
   s1 = run_stage(STAGE1_PROMPT.gsub('{{TEXT}}', t[:text]))
   s1_ok = s1.is_a?(Hash) && s1['fault_type'].to_s == t[:fault]
 
-  s2 = if t[:exempt]
-         nil
-       else
-         run_stage(STAGE2_PROMPT.gsub('{{TEXT}}', t[:text]))
-       end
+s2 = if t[:exempt]
+             nil
+           else
+             run_stage(STAGE2_PROMPT.gsub('{{TEXT}}', t[:text]), verifyable: true)
+           end
 
   j = SopPipe.judge(s1, s2, t[:fault])
   verdict = j.pass ? 'PASS' : 'FAIL'

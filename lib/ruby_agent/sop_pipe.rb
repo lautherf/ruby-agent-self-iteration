@@ -39,17 +39,30 @@ module SopPipe
 
   Judge = Struct.new(:pass, :fault_hit, :verify_hit, :claimed_aligned, :exempt, :diag, keyword_init: true)
 
+  # fault_type 字段可含逗号/顿号/斜杠分隔的多标签；解析出白名单内 actual 与名单外 oob。
+  # oob 一旦非空即解剖锁必红（零容忍自创词）。
+  def self.parse_tags(stage1)
+    return { actual: [], oob: [] } unless stage1.is_a?(Hash)
+
+    tags = stage1['fault_type'].to_s.split(/[,，、\/]/).map(&:strip).reject(&:empty?)
+    { actual: tags.select { |t| ALL_TYPES.include?(t) }, oob: tags.reject { |t| ALL_TYPES.include?(t) } }
+  end
+
   # judge(stage1, stage2, fault) → Judge
-  #   stage1 解剖产物：{ 'fault_type' =>, 'hidden_premise' =>, 'reason' => } 或 nil
+  #   stage1 解剖产物：{ 'fault_type' => '…' 或 '…','…'（多标签逗号分隔）, 'hidden_premise' =>, 'reason' => } 或 nil
   #   stage2 机验产物：{ 'premises' =>, 'conclusion' =>, 'claimed' => } 或 nil（exempt 时可为 nil）
   #   fault  = 该题期望的 fault_type（∈ ALL_TYPES）
+  #
+  # 多标签开放：句子的错位常常是复合的（如"一词多义×组块"），解剖锁改成
+  # "期望 fault ∉ 模型给的白名单标签集"（交集判缺，不是全等）——依旧零容忍白名单外词，
+  # 但不再因两个合法标签都沾边就误杀。这是评审学调整，不是放水。
   def self.judge(stage1, stage2, fault)
     expected = EXPECTED[fault.to_s]
     raise ArgumentError, "未知 fault_type: #{fault.inspect}" unless ALL_TYPES.include?(fault.to_s)
 
     exempt = expected.nil?
-    actual = stage1.is_a?(Hash) ? stage1['fault_type'].to_s : ''
-    fault_hit = actual == fault.to_s
+    parsed = parse_tags(stage1)
+    fault_hit = parsed[:actual].include?(fault.to_s) && parsed[:oob].empty? && !parsed[:actual].empty?
 
     unless exempt
       raise ArgumentError, "provable 类 #{fault} 必须提供 stage2" if stage2.nil?
@@ -79,7 +92,12 @@ module SopPipe
 
   def self.diag_of(fault_hit, verify_ok, claimed_ok, exempt, stage1, stage2, expected)
     parts = []
-    parts << "解剖标签 #{stage1.is_a?(Hash) ? stage1['fault_type'].to_s.inspect : '∅'}#{fault_hit ? '' : '（或非白名单）'}" if stage1
+    parsed = parse_tags(stage1)
+    if stage1
+      label = parsed[:actual].inspect
+      label += " + 名单外词#{parsed[:oob].inspect}" unless parsed[:oob].empty?
+      parts << "解剖标签 #{label}#{fault_hit ? '' : ' ← 缺期望命中'}"
+    end
     unless exempt
       machine = (stage2 && stage2['conclusion']) ? begin
         PropSolver.verify(stage2['premises'] || [], stage2['conclusion'])[:entailed]
