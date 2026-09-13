@@ -1,0 +1,47 @@
+{
+  "generated_at": "2026-09-13T23:21:43+08:00",
+  "model": "agnes-2.5-flash",
+  "sop": "SOP-NL-02",
+  "total": 4,
+  "passed": 4,
+  "failed": 0,
+  "void": 0,
+  "rows": [
+    {
+      "name": "rain-affirm-consequent",
+      "verdict": "PASS",
+      "expected": "not_entailed",
+      "machine": "not_entailed",
+      "claimed": "not_entailed",
+      "answer": "{\"vars\":[\"A\",\"B\"],\"premises\":[[\"imp\",\"A\",\"B\"],\"B\"],\"conclusion\":\"A\",\"claimed\":\"not_entailed\"}",
+      "diag": "一致"
+    },
+    {
+      "name": "candy-cure-single-cause",
+      "verdict": "PASS",
+      "expected": "not_entailed",
+      "machine": "not_entailed",
+      "claimed": "not_entailed",
+      "answer": "{\"vars\":[\"A\",\"B\",\"C\"],\"premises\":[[\"and\",\"A\",\"B\"]],\"conclusion\":\"C\",\"claimed\":\"not_entailed\"}",
+      "diag": "一致"
+    },
+    {
+      "name": "oxygen-composition-probability",
+      "verdict": "PASS",
+      "expected": "not_entailed",
+      "machine": "not_entailed",
+      "claimed": "not_entailed",
+      "answer": "```json\n{\n  \"vars\": [\"A\", \"B\"],\n  \"premises\": [\n    [\"imp\", \"A\", \"B\"]\n  ],\n  \"conclusion\": \"B\",\n  \"claimed\": \"not_entailed\"\n}\n```\n\n**变量注释：**\n- A：氧气占空气的五分之一\n- B：每次呼吸你有五分之四的概率憋死\n\n**推理说明：** 前提仅给出「A→B」与单独",
+      "diag": "一致"
+    },
+    {
+      "name": "early-ponens",
+      "verdict": "PASS",
+      "expected": "entailed",
+      "machine": "entailed",
+      "claimed": "entailed",
+      "answer": "```json\n{\"vars\":[\"P\",\"Q\"],\"premises\":[[\"imp\",\"P\",\"Q\"],\"P\"],\"conclusion\":\"Q\",\"claimed\":\"entailed\"}\n```",
+      "diag": "一致"
+    }
+  ]
+}

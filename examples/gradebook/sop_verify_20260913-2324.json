@@ -1,0 +1,47 @@
+{
+  "generated_at": "2026-09-13T23:24:08+08:00",
+  "model": "agnes-2.5-flash",
+  "sop": "SOP-NL-02",
+  "total": 4,
+  "passed": 4,
+  "failed": 0,
+  "void": 0,
+  "rows": [
+    {
+      "name": "rain-affirm-consequent",
+      "verdict": "PASS",
+      "expected": "not_entailed",
+      "machine": "not_entailed",
+      "claimed": "not_entailed",
+      "answer": "{\"vars\":[\"A\",\"B\"],\"premises\":[[\"imp\",\"A\",\"B\"],\"B\"],\"conclusion\":\"A\",\"claimed\":\"not_entailed\"}",
+      "diag": "一致"
+    },
+    {
+      "name": "candy-cure-single-cause",
+      "verdict": "PASS",
+      "expected": "not_entailed",
+      "machine": "not_entailed",
+      "claimed": "not_entailed",
+      "answer": "```json\n{\"vars\":[\"A\",\"B\",\"C\"],\"premises\":[[\"imp\",\"A\",\"B\"]],\"conclusion\":\"C\",\"claimed\":\"not_entailed\"}\n```",
+      "diag": "一致"
+    },
+    {
+      "name": "oxygen-composition-probability",
+      "verdict": "PASS",
+      "expected": "not_entailed",
+      "machine": "not_entailed",
+      "claimed": "not_entailed",
+      "answer": "```json\n{\"vars\":[\"A\",\"B\"],\"premises\":[\"A\"],\"conclusion\":\"B\",\"claimed\":\"not_entailed\"}\n```",
+      "diag": "一致"
+    },
+    {
+      "name": "early-ponens",
+      "verdict": "PASS",
+      "expected": "entailed",
+      "machine": "entailed",
+      "claimed": "entailed",
+      "answer": "```json\n{\"vars\":[\"P\",\"Q\"],\"premises\":[[\"imp\",\"P\",\"Q\"],\"P\"],\"conclusion\":\"Q\",\"claimed\":\"entailed\"}\n```",
+      "diag": "一致"
+    }
+  ]
+}

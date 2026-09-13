@@ -1,0 +1,83 @@
+{
+  "generated_at": "2026-09-13T23:45:28+08:00",
+  "model": "agnes-2.5-flash",
+  "sop": "SOP-NL-02",
+  "total": 8,
+  "passed": 5,
+  "failed": 3,
+  "void": 0,
+  "rows": [
+    {
+      "name": "rain-affirm-consequent",
+      "verdict": "PASS",
+      "expected": "not_entailed",
+      "machine": "not_entailed",
+      "claimed": "not_entailed",
+      "answer": "Thought: 分析这个自然语言句子的逻辑结构。句子是经典的条件推理：\"如果下雨路就滑，今天路滑，所以今天下雨了。\" 这是典型的**肯定后件谬误**。\n\n- 设 A = 下雨，B = 路滑\n- 前提1：A → B（如果下雨则路滑）\n- 前提2：B（今天路滑）\n- 结论：A（今天下雨）\n\n验证是否有效：前提集 {A→B, B} 能推出 A 吗？反例：B=true, A=false 时，A→B = ",
+      "diag": "一致"
+    },
+    {
+      "name": "candy-cure-single-cause",
+      "verdict": "FAIL",
+      "expected": "not_entailed",
+      "machine": "entailed",
+      "claimed": "entailed",
+      "answer": "```json\n{\"vars\":[\"A\",\"B\"],\"premises\":[[\"and\",\"A\",\"B\"]],\"conclusion\":[\"imp\",\"A\",\"B\"],\"claimed\":\"entailed\"}\n```",
+      "diag": "机器判 entailed ≠ 真实地位 not_entailed"
+    },
+    {
+      "name": "oxygen-composition-probability",
+      "verdict": "FAIL",
+      "expected": "not_entailed",
+      "machine": "not_entailed",
+      "claimed": "entailed",
+      "answer": "```json\n{\n  \"vars\": [\"A\", \"B\"],\n  \"premises\": [[\"imp\", \"A\", \"B\"]],\n  \"conclusion\": \"B\",\n  \"claimed\": \"entailed\"\n}\n```",
+      "diag": "LLM 自报 \"entailed\" ≠ 机器推演 not_entailed"
+    },
+    {
+      "name": "early-ponens",
+      "verdict": "PASS",
+      "expected": "entailed",
+      "machine": "entailed",
+      "claimed": "entailed",
+      "answer": "{\"vars\":[\"P\",\"Q\"],\"premises\":[[\"imp\",\"P\",\"Q\"],\"P\"],\"conclusion\":\"Q\",\"claimed\":\"entailed\"}",
+      "diag": "一致"
+    },
+    {
+      "name": "all-men-swap",
+      "verdict": "PASS",
+      "expected": "not_entailed",
+      "machine": "not_entailed",
+      "claimed": "not_entailed",
+      "answer": "```json\n{\n  \"vars\": [\"A\", \"B\"],\n  \"premises\": [[\"imp\", \"A\", \"B\"]],\n  \"conclusion\": [\"imp\", \"B\", \"A\"],\n  \"claimed\": \"not_entailed\"\n}\n```",
+      "diag": "一致"
+    },
+    {
+      "name": "socratic-mortal",
+      "verdict": "FAIL",
+      "expected": "entailed",
+      "machine": "not_entailed",
+      "claimed": "not_entailed",
+      "answer": "```json\n{\n  \"vars\": [\"A\", \"B\", \"C\"],\n  \"premises\": [\"A\", \"B\"],\n  \"conclusion\": \"C\",\n  \"claimed\": \"not_entailed\"\n}\n```\n\n**释义：**\n- A = 所有人都会死\n- B = 苏格拉底是人\n- C = 苏格拉底会死\n\n该推理是经典三段论，依赖一阶谓词逻辑（∀x(Human(x)→Di",
+      "diag": "机器判 not_entailed ≠ 真实地位 entailed"
+    },
+    {
+      "name": "survivor-bias",
+      "verdict": "PASS",
+      "expected": "not_entailed",
+      "machine": "not_entailed",
+      "claimed": "not_entailed",
+      "answer": "{\"vars\":[\"A\",\"B\",\"C\"],\"premises\":[[\"and\",\"A\",\"B\"]],\"conclusion\":\"C\",\"claimed\":\"not_entailed\"}\n\n变量定义：\n- A：返航战斗机机翼弹孔最多\n- B：没回来的飞机弹孔在别处\n- C：应该给机翼装更多装甲\n\nclaimed = not_entailed：前提 A∧B 实际支持的是\"机翼不是致命部位\"，反而说明",
+      "diag": "一致"
+    },
+    {
+      "name": "failure-proverb",
+      "verdict": "PASS",
+      "expected": "not_entailed",
+      "machine": "not_entailed",
+      "claimed": "not_entailed",
+      "answer": "```json\n{\"vars\":[\"A\",\"B\",\"C\"],\"premises\":[[\"imp\",\"A\",\"B\"],\"A\"],\"conclusion\":\"C\",\"claimed\":\"not_entailed\"}\n```\n\n**语义映射：**\n- A：失败是成功之母（失败倾向于孕育成功）\n- B：他失败了很多次\n- C：他一定会成功\n\n**逻辑诊断：**\n前提 `A ∧ B` 无法推出 `C`。这是",
+      "diag": "一致"
+    }
+  ]
+}

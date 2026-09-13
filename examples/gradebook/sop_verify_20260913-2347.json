@@ -1,0 +1,63 @@
+{
+  "generated_at": "2026-09-13T23:47:28+08:00",
+  "model": "agnes-2.5-flash",
+  "sop": "SOP-NL-02",
+  "total": 8,
+  "passed": 3,
+  "failed": 0,
+  "void": 5,
+  "rows": [
+    {
+      "name": "rain-affirm-consequent",
+      "verdict": "PASS",
+      "expected": "not_entailed",
+      "machine": "not_entailed",
+      "claimed": "not_entailed",
+      "answer": "```json\n{\"vars\":[\"R\",\"S\"],\"premises\":[[\"imp\",\"R\",\"S\"],\"S\"],\"conclusion\":\"R\",\"claimed\":\"not_entailed\"}\n```",
+      "diag": "一致"
+    },
+    {
+      "name": "candy-cure-single-cause",
+      "verdict": "PASS",
+      "expected": "not_entailed",
+      "machine": "not_entailed",
+      "claimed": "not_entailed",
+      "answer": "Thought: 用户要求将自然语言句子翻译成命题逻辑 AST，并判断结论是否被前提蕴含。这是一个纯逻辑推理题，需要用 Lean 思想做形式化验证。\n\n句子分析：\n- \"他吃了糖之后病好了，所以糖治好了他的病。\"\n- 变量定义：\n  - A = 他吃了糖\n  - B = 他的病好了\n  - C = 糖治好了他的病\n\n前提集：A, B（吃了糖、病好了）\n结论：C（糖治好了病）\n\n关键分析：前提只说了",
+      "diag": "一致"
+    },
+    {
+      "name": "oxygen-composition-probability",
+      "verdict": "PASS",
+      "expected": "not_entailed",
+      "machine": "not_entailed",
+      "claimed": "not_entailed",
+      "answer": "{\"vars\":[\"A\",\"B\"],\"premises\":[[\"imp\",\"A\",\"B\"]],\"conclusion\":\"B\",\"claimed\":\"not_entailed\"}",
+      "diag": "一致"
+    },
+    {
+      "name": "early-ponens",
+      "verdict": "VOID",
+      "answer": ""
+    },
+    {
+      "name": "all-men-swap",
+      "verdict": "VOID",
+      "answer": ""
+    },
+    {
+      "name": "socratic-mortal",
+      "verdict": "VOID",
+      "answer": ""
+    },
+    {
+      "name": "survivor-bias",
+      "verdict": "VOID",
+      "answer": ""
+    },
+    {
+      "name": "failure-proverb",
+      "verdict": "VOID",
+      "answer": ""
+    }
+  ]
+}
