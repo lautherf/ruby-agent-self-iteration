@@ -200,6 +200,7 @@ end
 # @doc role: argmax(arr): 返回数组中最大元素的首个索引，空数组抛 ArgumentError
 # @doc note: 返回最大值首次出现的索引（0-based）。输入非数组或空数组抛 ArgumentError。
 def argmax(arr)
+  raise ArgumentError, 'non-array input' unless arr.is_a?(Array)
   raise ArgumentError, 'empty array' if arr.empty?
   max_val = arr.max
   arr.index(max_val)
@@ -209,7 +210,7 @@ end
 def entropy(p)
   raise ArgumentError unless p.is_a?(Array)
   p.each do |x|
-    raise ArgumentError unless x.is_a?(Numeric)
+    raise ArgumentError, 'negative p not allowed' if !x.is_a?(Numeric) || x < 0
   end
   return 0.0 if p.empty?
   
