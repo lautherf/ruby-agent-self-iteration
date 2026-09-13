@@ -81,6 +81,18 @@ class KnowledgeSpec < Minitest::Test
     end
   end
 
+  def test_grade_defaults_to_note_and_persists
+    with_knowledge_file do |path|
+      kb = RubyAgent::Knowledge.new(path)
+      quietly { kb.add('现场心得，未经机械验证') }
+      assert_equal 'note', kb.lessons.first[:grade], '默认证据级别必须是 note（未验证）'
+
+      quietly { kb.add('方法边界总结', grade: 'verified') }
+      assert_equal 'verified', kb.lessons[1][:grade]
+      assert_includes File.read(path), '# @doc grade: verified'
+    end
+  end
+
   def test_for_llm_round_trips_through_doc_plugin
     with_knowledge_file do |path|
       kb = RubyAgent::Knowledge.new(path)

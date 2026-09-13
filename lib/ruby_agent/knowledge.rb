@@ -44,16 +44,17 @@ module RubyAgent
       self
     end
 
-    # 全部经验：[{ id:, note:, tags: }]
+    # 全部经验：[{ id:, note:, tags:, grade: }]
     def lessons
       @registry.map do |id, attrs|
-        { id: id, note: attrs['note'], tags: attrs['tags'] }
+        { id: id, note: attrs['note'], tags: attrs['tags'], grade: attrs['grade'] || 'note' }
       end
     end
 
     # 沉淀一条经验。返回落盘后的 id（字符串）；重复内容返回既有 id；失败返回 false。
     # 线程安全：读-改-写在同一把锁里完成，绝不产生 lost update。
-    def add(lesson, tags: nil)
+    # grade=证据级别（他人/自我分舱用）：verified 可机械复核 / sop 方法论带回归集 / note 现场笔记未验证（默认）。
+    def add(lesson, tags: nil, grade: 'note')
       note = lesson.to_s.strip
       return false if note.empty?
 
@@ -63,8 +64,8 @@ module RubyAgent
 
         id = next_id
         attrs = { 'note' => note }
-        tags = tags.to_s.strip
-        attrs['tags'] = tags unless tags.empty?
+        attrs['tags'] = tags.to_s.strip unless tags.to_s.strip.empty?
+        attrs['grade'] = grade.to_s.strip unless grade.to_s.strip.empty?
         return false unless append_lesson!(id, attrs)
 
         @registry[id] = attrs
