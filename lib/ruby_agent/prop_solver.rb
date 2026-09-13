@@ -17,12 +17,13 @@
 module PropSolver
   module_function
 
-  # —— 变量收集：从 AST 提取全部命题变量（保序去重）——
+  # —— 变量收集：从 AST 提取全部命题变量（保序去重，连接词不算变量）——
   def vars_in(*exprs)
+    ops = %w[not and or imp iff]
     seen = []
     gather = lambda do |e|
       case e
-      when String then seen << e unless seen.include?(e)
+      when String then seen << e unless ops.include?(e) || seen.include?(e)
       when Array then e.each { |x| gather.call(x) }
       end
     end
@@ -84,5 +85,20 @@ module PropSolver
   # —— 反例指派 → 可读描述（机器能说的部分）——
   def describe_model(a)
     a.sort_by(&:first).map { |v, val| "#{v}=#{val}" }.join(', ')
+  end
+
+  # —— 与 ra 方法库对齐的公开别名：直接返回反例指派数组 ——
+  def countermodels(premises, conclusion)
+    verify(premises, conclusion)[:countermodels]
+  end
+
+  # —— 与 ra 方法库对齐的公开别名：entails?——
+  def entails?(premises, conclusion)
+    verify(premises, conclusion)[:entailed]
+  end
+
+  # —— 与 ra 方法库对齐的公开别名：satisfiable?——
+  def satisfiable?(premises)
+    consistent?(premises)
   end
 end

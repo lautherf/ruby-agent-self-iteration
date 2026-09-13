@@ -105,7 +105,21 @@ GOLDEN = {
   'de_morgan_nor' => [{ 'args' => [true, false], 'expected' => 'true' },
                       { 'args' => [false, false], 'expected' => 'true' }],
   'law_of_equivalence' => [{ 'args' => [true, false], 'expected' => 'true' },
-                           { 'args' => [true, true], 'expected' => 'true' }]
+                           { 'args' => [true, true], 'expected' => 'true' }],
+  # ── SOP-NL-02 验证器组（机器推演侧）──
+  'eval_formula' => [{ 'args' => [['imp', 'A', 'B'], { 'A' => true, 'B' => false }], 'expected' => 'false' },
+                     { 'args' => [['imp', 'A', 'B'], { 'A' => false, 'B' => true }], 'expected' => 'true' },
+                     { 'args' => [['iff', 'A', 'B'], { 'A' => true, 'B' => true }], 'expected' => 'true' }],
+  'formula_vars' => [{ 'args' => [['imp', 'A', 'B'], 'B'], 'expected' => '["A", "B"]' },
+                     { 'args' => [['and', 'C', 'A']], 'expected' => '["C", "A"]' }],
+  'all_assignments' => [{ 'args' => [['A', 'B']], 'assert' => 'result.size == 4 && result.uniq.size == 4 && result.all? { |a| a.is_a?(Hash) && a.keys.sort == %w[A B] && a.values.all? { |v| v == true || v == false } }' }],
+  'entails?' => [{ 'args' => [[['imp', 'A', 'B'], 'A'], 'B'], 'expected' => 'true' },
+                 { 'args' => [[['imp', 'A', 'B'], 'B'], 'A'], 'expected' => 'false' },
+                 { 'args' => [['A', ['not', 'A']], 'B'], 'expected' => 'true' }],
+  'countermodels' => [{ 'args' => [['B', ['imp', 'A', 'B']], 'A'], 'expected' => '[{"B"=>true, "A"=>false}]' },
+                      { 'args' => [['A', ['imp', 'A', 'B']], 'B'], 'expected' => '[]' }],
+  'satisfiable?' => [{ 'args' => [['A', 'B']], 'expected' => 'true' },
+                     { 'args' => [['A', ['not', 'A']]], 'expected' => 'false' }]
 }.freeze
 
 # 身份契约方法与类的对应不需要执行体，数量对齐审计报告即可。
@@ -140,6 +154,6 @@ class GoldenRegressionSpec < Minitest::Test
   end
 
   def test_golden_coverage_reports_method_count
-    assert_equal 40, GOLDEN.size + IDENTITY_METHODS.size, '黄金集与 audit 报告 A 舱方法数应一致'
+    assert_equal 46, GOLDEN.size + IDENTITY_METHODS.size, '黄金集与 audit 报告 A 舱方法数应一致'
   end
 end

@@ -68,6 +68,7 @@ AST_RULES = <<~TXT
    "claimed":"not_entailed"}
   claimed 只能是 "entailed"（这些前提确实推得出结论）或 "not_entailed"（推不出，缺隐藏前提）。
   ⚠ 不许用工具，不许查库，直接纯思考试卷作答。
+  （可选自查：ra 方法库自带 entails?/countermodels/satisfiable? 只读推理接口，可自行心算，不必调用。）
 TXT
 
 SOP_PROMPT = <<~PROMPT

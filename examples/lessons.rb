@@ -68,3 +68,8 @@ end
 # @doc grade: sop
 def lesson_013
 end
+# @doc note: 融合 SOP-NL-02 到 ra 方法库（agent 侧能力，与 harness 独立判分双向对齐）：新增 eval_formula/formula_vars/all_assignments/entails?/countermodels/satisfiable? 六个公开方法（含思考试卷白名单连接词），进入 golden regression（46 方法，含所有新增）；新增 solver_consistency_spec 确保 ra 内嵌实现与 lib PropSolver 永不漂移。至此解剖（SOP-NL-01）+ 机验（SOP-NL-02）+ 考试闭环（golden/property/transfer/exam mode/一致性）完整。教训：expand_path('../x', ROOT) 在 ROOT 含一层 .. 时再退一层（sop_analyze 之前全部知识/方法库从未挂载——成绩是纯 LLM baseline；transfer/ablation 用 File.join 不受影响）；插件路径必须用绝对路径或者 File.join(root, subdir)，杜绝二层相对逃逸。
+# @doc tags: Lean思想,方法融合,路径安全,回归基线,教训
+# @doc grade: sop
+def lesson_014
+end

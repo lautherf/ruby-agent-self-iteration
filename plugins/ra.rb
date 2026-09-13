@@ -317,3 +317,76 @@ end
 def law_of_equivalence(p, q)
   biconditional(p, q) == (implication(p, q) && implication(q, p))
 end
+
+# ── SOP-NL-02 方法组：命题逻辑机器验证（Lean 工序的 agent 侧）──
+# 分工：LLM 负责把自然语言翻译成 AST（变量+白名单连接词），这些方法负责**机器推演**：
+# 谁推得出给证明（无反例），谁推不出给出精确反例指派——被偷换/缺失的隐藏前提就藏在反例里。
+# AST：["not",X]/["and",X,Y]/["or",X,Y]/["imp",X,Y]/["iff",X,Y]，变量为大写字符串。
+# 与 lib/ruby_agent/prop_solver.rb 语义一致（spec 里双向对齐防漂移）。
+
+# @doc role: AST 公式求值：给定公式与变量指派 {A=>true,...} 返回布尔真假
+# @doc example: eval_formula(["imp","A","B"], {"A"=>true,"B"=>false})
+# @doc note: 支持 not/and/or/imp/iff；未知操作符抛 ArgumentError。
+def eval_formula(expr, assign)
+  case expr
+  when String then assign.fetch(expr)
+  when Array
+    case expr[0]
+    when 'not' then !eval_formula(expr[1], assign)
+    when 'and' then eval_formula(expr[1], assign) && eval_formula(expr[2], assign)
+    when 'or'  then eval_formula(expr[1], assign) || eval_formula(expr[2], assign)
+    when 'imp' then !eval_formula(expr[1], assign) || eval_formula(expr[2], assign)
+    when 'iff' then eval_formula(expr[1], assign) == eval_formula(expr[2], assign)
+    else raise ArgumentError, "未知连接词 #{expr[0]}"
+    end
+  else
+    raise ArgumentError, "非法 AST 节点 #{expr.inspect}"
+  end
+end
+
+# @doc role: AST 变量收集：返回公式中出现的全部命题变量（保序去重，白名单连接词不算变量）
+# @doc example: formula_vars(["imp","A","B"], "B")  #=> ["A","B"]
+def formula_vars(*exprs)
+  ops = %w[not and or imp iff]
+  seen = []
+  walk = lambda do |e|
+    case e
+    when String then seen << e unless ops.include?(e) || seen.include?(e)
+    when Array then e.each { |x| walk.call(x) }
+    end
+  end
+  exprs.each { |e| walk.call(e) }
+  seen
+end
+
+# @doc role: 全部真值指派：n 个变量的 2^n 条完整赋值 {var=>true/false}
+# @doc example: all_assignments(["A","B"])  #=> 4 条指派
+def all_assignments(vars)
+  total = 1 << vars.size
+  total.times.map do |mask|
+    vars.each_with_index.to_h { |v, i| [v, ((mask >> i) & 1) == 1] }
+  end
+end
+
+# @doc role: 逻辑蕴涵判定：前提集合是否机械地推得出结论（真值枚举），返回布尔
+# @doc example: entails?([["imp","A","B"],"A"], "B")  #=> true（modus ponens）
+# @doc note: 前提：[AST]，结论：AST；所有让前提真而结论假的指派不存在才为 true。
+def entails?(premises, conclusion)
+  all = formula_vars(*premises, conclusion)
+  all_assignments(all).none? { |a| premises.all? { |p| eval_formula(p, a) } && !eval_formula(conclusion, a) }
+end
+
+# @doc role: 反例模型：返回所有让「前提皆真而结论假」的指派——缺失/被偷换前提的精确落点
+# @doc example: countermodels(["B",["imp","A","B"]], "A")  #=> [{"B"=>true,"A"=>false}]
+def countermodels(premises, conclusion)
+  all = formula_vars(*premises, conclusion)
+  all_assignments(all).select { |a| premises.all? { |p| eval_formula(p, a) } && !eval_formula(conclusion, a) }
+end
+
+# @doc role: 前提一致性：前提集合是否存在至少一个模型（即不相互矛盾）
+# @doc example: satisfiable?(["A",["not","B"]])  #=> true
+# @doc note: 矛盾前提才返回 false；falsifiable 不适用于这里是可满足性。
+def satisfiable?(premises)
+  all = formula_vars(*premises)
+  all_assignments(all).any? { |a| premises.all? { |p| eval_formula(p, a) } }
+end
