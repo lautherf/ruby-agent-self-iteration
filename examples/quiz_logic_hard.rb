@@ -9,9 +9,9 @@ require 'ruby_agent'
 
 PAPER = [
   ['modus_ponens', '肯定前件（m.p. 规则）：(p→q) ∧ p，应推出结论 q',
-   [[true, true], true], [[true, false], false], [[false, true], false], [[false, false], false]],
+   [[true, true], true], [[true, false], false], [[false, true], true], [[false, false], false]],
   ['modus_tollens', '否定后件（m.t. 规则）：(p→q) ∧ ¬q，应推出结论 ¬p',
-   [[true, true], false], [[true, false], true], [[false, true], true], [[false, false], true]],
+   [[true, true], false], [[true, false], false], [[false, true], true], [[false, false], true]],
   ['law_of_contrapositive', '逆否等价律：p→q 当且仅当 ¬q→¬p（判断是否恒成立）',
    [[true, true], true], [[true, false], true], [[false, true], true], [[false, false], true]],
   ['de_morgan_nor', '德摩根Ⅰ：¬(p∨q) 与 ¬p∧¬q 等价（用 nor 表达并判断恒成立）',

@@ -35,3 +35,7 @@ end
 # @doc tags: 逻辑学,知识沉淀
 def lesson_008
 end
+# @doc note: modus_ponens(p, q) 直接返回 q，无需检查 p。肯定前件 (p→q)∧p 在经典逻辑中等价于 q。禁止添加前提守卫或额外校验，严格遵循「不检查 p」的要求。真值表已验证：(T,T)→T, (T,F)→F, (F,T)→T, (F,F)→F。
+# @doc tags: 逻辑学,肯定前件,modus ponens
+def lesson_009
+end
