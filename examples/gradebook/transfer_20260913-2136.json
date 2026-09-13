@@ -1,0 +1,58 @@
+{
+  "generated_at": "2026-09-13T21:36:52+08:00",
+  "model": "agnes-2.5-flash",
+  "total": 8,
+  "passed": 7,
+  "failed": 1,
+  "void": 0,
+  "rows": [
+    {
+      "name": "gcd-swap",
+      "course": "小学数学",
+      "verdict": "PASS",
+      "answer": "6"
+    },
+    {
+      "name": "gcd-large",
+      "course": "小学数学",
+      "verdict": "PASS",
+      "answer": "21"
+    },
+    {
+      "name": "combination-big",
+      "course": "初中数学",
+      "verdict": "PASS",
+      "answer": "2118760"
+    },
+    {
+      "name": "matmul-rect",
+      "course": "大学·LLM基础",
+      "verdict": "PASS",
+      "answer": "[[22,28],[49,64]]"
+    },
+    {
+      "name": "transpose-rect",
+      "course": "大学·LLM基础",
+      "verdict": "PASS",
+      "answer": "[[1,3,5],[2,4,6]]"
+    },
+    {
+      "name": "entropy-uniform4",
+      "course": "大学·LLM基础",
+      "verdict": "PASS",
+      "answer": "2.0"
+    },
+    {
+      "name": "law-random-point",
+      "course": "逻辑学",
+      "verdict": "FAIL",
+      "answer": "False **原因：** 题目中实现的 `law_of_contrapositive` 方法有误。它计算的是： - left = `!p || q`（即 p→q） - right = `!q || !p`（这是 **¬q ∨ ¬p**，不"
+    },
+    {
+      "name": "tone-new-word",
+      "course": "小学语文",
+      "verdict": "PASS",
+      "answer": "4"
+    }
+  ]
+}
