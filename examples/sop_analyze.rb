@@ -47,8 +47,8 @@ REGRESSION = [
 ].freeze
 
 def build_agent
-  ra = RubyAgent::DocPlugin.new('ra', File.expand_path('../plugins/ra.rb', ROOT)).load!
-  knowledge = RubyAgent::Knowledge.new(File.expand_path('../examples/lessons.rb', ROOT))
+  ra = RubyAgent::DocPlugin.new('ra', File.expand_path('plugins/ra.rb', ROOT)).load!
+  knowledge = RubyAgent::Knowledge.new(File.expand_path('examples/lessons.rb', ROOT))
   hub = RubyAgent::DocHub.new
   hub.mount(ra)
   hub.mount(RubyAgent::DocPlugin.new(RubyAgent::Knowledge::NAME, knowledge.path).load!)

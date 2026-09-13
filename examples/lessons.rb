@@ -63,3 +63,8 @@ end
 # @doc grade: sop
 def lesson_012
 end
+# @doc note: SOP-NL-02《自然语言隐藏前提·形式化验证》Lean 思想工序：STEP1 把自然语言的显式前提与结论翻译成命题逻辑 AST（变量+白名单连接词 not/and/or/imp/iff，禁自创操作符，conclusion 只用 vars 内变量，禁改原句含义）；STEP2 交机器（PropSolver）做真值枚举：前提集是否蕴涵结论；STEP3 无反例→机器给出证明（该句显式前提已足够）；有反例→反例指派即被偷换/缺失前提的精确落点；STEP4 LLM 自报地位必须与机器推演一致——LLM 只负责翻译，证明与反例全由机器出具（Lean 分工）。判分纪律：机器判定≠标注真实地位、或自报≠机器推演，一律 FAIL；AI 自创操作符或偷换结论让机器可证=作弊，机器当场抓获。
+# @doc tags: 逻辑谬误,命题逻辑,形式化验证,Lean思想,SOP
+# @doc grade: sop
+def lesson_013
+end
