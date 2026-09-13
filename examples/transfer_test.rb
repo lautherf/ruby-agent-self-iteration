@@ -91,11 +91,7 @@ def build_full_agent
     api_key: ENV['AGNES_API_KEY'], model: ENV['AGNES_MODEL'] || 'agnes-2.5-flash'
   )
   agent = RubyAgent::AgentLoop.new(hub: hub, llm: llm, knowledge: knowledge,
-                                   max_steps: 8, writable_plugins: ['ra'])
-  # 测评卷：不许写库/实现/沉淀，查可用（read_docs/read_code），回答用 Final Answer
-  %w[apply_code verify teach learn whoami].each do |t|
-    agent.register_tool(t) { |_in| '测评卷：禁止写代码/沉淀身份，请直接 Final Answer。' }
-  end
+                                   max_steps: 8, writable_plugins: ['ra'], mode: :exam)
   agent
 end
 

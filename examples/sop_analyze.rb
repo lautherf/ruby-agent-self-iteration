@@ -56,11 +56,7 @@ def build_agent
     base_url: ENV['AGNES_BASE_URL'] || 'https://apihub.agnes-ai.com/v1',
     api_key: ENV['AGNES_API_KEY'], model: ENV['AGNES_MODEL'] || 'agnes-2.5-flash'
   )
-  agent = RubyAgent::AgentLoop.new(hub: hub, llm: llm, knowledge: knowledge, max_steps: 10, writable_plugins: ['ra'])
-  %w[apply_code verify teach learn library read_code read_docs whoami].each do |t|
-    agent.register_tool(t) { |_in| 'SOP 分析为纯思考试卷：禁止写代码/查库/沉淀，请直接 Final Answer 输出 JSON。' }
-  end
-  agent
+  agent = RubyAgent::AgentLoop.new(hub: hub, llm: llm, knowledge: knowledge, max_steps: 10, writable_plugins: ['ra'], mode: :exam)
 end
 
 def run_sop(agent, text)

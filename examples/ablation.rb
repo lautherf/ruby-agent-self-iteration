@@ -75,7 +75,7 @@ def ask(level, q)
   hub.mount(RubyAgent::DocPlugin.new('ra', ra_path).load!) if level >= 1
   hub.mount(RubyAgent::DocPlugin.new(RubyAgent::Knowledge::NAME, knowledge.path).load!) if level >= 2
   agent = RubyAgent::AgentLoop.new(hub: hub, llm: llm, knowledge: knowledge,
-                                   max_steps: 8, writable_plugins: ['ra'])
+                                   max_steps: 8, writable_plugins: ['ra'], mode: :exam)
   agent.run(q).to_s
 end
 

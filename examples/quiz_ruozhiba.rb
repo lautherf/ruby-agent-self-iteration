@@ -48,9 +48,7 @@ llm = RubyAgent::DeepSeekAdapter.new(
   base_url: ENV['AGNES_BASE_URL'] || 'https://apihub.agnes-ai.com/v1',
   api_key: ENV['AGNES_API_KEY'], model: ENV['AGNES_MODEL'] || 'agnes-2.5-flash'
 )
-agent = RubyAgent::AgentLoop.new(hub: hub, llm: llm, knowledge: knowledge, max_steps: 12, writable_plugins: ['ra'])
-BAN = %w[apply_code verify teach learn library read_code read_docs whoami]
-BAN.each { |t| agent.register_tool(t) { |_in| '本场为纯思考试卷：禁止写代码/查库/沉淀，请直接 Final Answer。' } }
+agent = RubyAgent::AgentLoop.new(hub: hub, llm: llm, knowledge: knowledge, max_steps: 12, writable_plugins: ['ra'], mode: :exam)
 agent.on(:tool_call) { |e| puts "    → #{e[:tool]}" }
 
 puts "【发卷】弱智吧经典问题 · 逻辑解剖考（#{PAPER.size} 题 · 老师阅卷）"

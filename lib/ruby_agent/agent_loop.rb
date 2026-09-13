@@ -71,7 +71,7 @@ PROMPT
 
     attr_reader :hub, :llm, :state, :events, :tools
 
-    def initialize(hub:, llm:, max_steps: 8, system_prompt: DEFAULT_SYSTEM_PROMPT, knowledge: nil, memory: nil, auto_rollback: true, writable_plugins: nil)
+    def initialize(hub:, llm:, max_steps: 8, system_prompt: DEFAULT_SYSTEM_PROMPT, knowledge: nil, memory: nil, auto_rollback: true, writable_plugins: nil, mode: :normal)
       @hub = hub
       @llm = llm
       @max_steps = max_steps
@@ -80,6 +80,7 @@ PROMPT
       @memory = memory
       @auto_rollback = auto_rollback
       @writable_plugins = writable_plugins&.map(&:to_s)
+      @mode = mode.to_sym
       @tools = {}
       @events = []
       @observers = []
@@ -89,6 +90,7 @@ PROMPT
       register_default_tools
       register_learn_tool if @knowledge
       register_remember_memory_tools if @memory
+      apply_exam_restrictions! if @mode == :exam
     end
 
     # 注册工具：name => 接收解析后 input 的 block
@@ -675,6 +677,16 @@ PROMPT
     def normalize_tags(value)
       value = value.join(',') if value.is_a?(Array)
       value.to_s.strip
+    end
+
+    # 测评模式（exam）：覆盖所有写工具与 whoami，只保留 read_docs/read_code/library/list_docs。
+    # 防止 LLM 把考卷误当训练场（弱智吧 apply_code 残留、JSON 值漂移、工具名乱猜——三大罪魁）。
+    EXAM_BAN_TOOLS = %w[apply_code verify teach learn whoami].freeze
+
+    def apply_exam_restrictions!
+      EXAM_BAN_TOOLS.each do |t|
+        register_tool(t) { |_| '测评模式：本卷禁止写库/实现/沉淀/身份查询，仅允许只读检索与 Final Answer。' }
+      end
     end
 
     def emit(type, payload = {})
