@@ -193,4 +193,25 @@ class PropertyRegressionSpec < Minitest::Test
       assert_prop("nor #{p},#{q}") { @obj.nor(p, q) == tt_nor.call(p, q) }
     end
   end
+
+  # ── 命题验证器群（SOP-NL-02 融合）──────────────────────
+  def test_solver_reasoning_laws_over_propositions
+    assert_prop('自反：A ⊢ A') { @obj.entails?(['A'], 'A') }
+    assert_prop('排中律可证：⊢ A∨¬A') { @obj.entails?([], ['or', 'A', ['not', 'A']]) }
+    assert_prop('德摩根可证：¬(A∧B) ⊢ ¬A∨¬B') do
+      @obj.entails?([['not', ['and', 'A', 'B']]], ['or', ['not', 'A'], ['not', 'B']])
+    end
+    assert_prop('双重否定可证：A ⊢ ¬¬A') { @obj.entails?(['A'], ['not', ['not', 'A']]) }
+    assert_prop('肯定后件不可证（有反例）') { !@obj.entails?([['imp', 'A', 'B'], 'B'], 'A') }
+    assert_prop('矛盾前提爆炸：A∧¬A ⊢ B') { @obj.entails?([['and', 'A', ['not', 'A']]], 'B') }
+    assert_prop('反例模型全部满足"前提真结论假"') do
+      cm = @obj.countermodels([['imp', 'A', 'B'], 'B'], 'A')
+      !cm.empty? && cm.all? { |m| m['A'] == false && m['B'] == true }
+    end
+    assert_prop('satisfiable 矛盾为 false') { !@obj.satisfiable?(['A', ['not', 'A']]) }
+    assert_prop('satisfiable 一致为 true') { @obj.satisfiable?(['A', ['imp', 'A', 'B']]) }
+    assert_prop('countermodels 空 ⟺ entails？') do
+      @obj.countermodels(['A', ['imp', 'A', 'B']], 'B').empty? == @obj.entails?(['A', ['imp', 'A', 'B']], 'B')
+    end
+  end
 end

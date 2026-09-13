@@ -1,0 +1,83 @@
+{
+  "generated_at": "2026-09-13T23:52:32+08:00",
+  "model": "agnes-2.5-flash",
+  "sop": "SOP-NL-02",
+  "total": 8,
+  "passed": 6,
+  "failed": 2,
+  "void": 0,
+  "rows": [
+    {
+      "name": "rain-affirm-consequent",
+      "verdict": "PASS",
+      "expected": "not_entailed",
+      "machine": "not_entailed",
+      "claimed": "not_entailed",
+      "answer": "```json\n{\"vars\":[\"A\",\"B\"],\"premises\":[[\"imp\",\"A\",\"B\"],\"B\"],\"conclusion\":\"A\",\"claimed\":\"not_entailed\"}\n```",
+      "diag": "一致"
+    },
+    {
+      "name": "candy-cure-single-cause",
+      "verdict": "PASS",
+      "expected": "not_entailed",
+      "machine": "not_entailed",
+      "claimed": "not_entailed",
+      "answer": "{\"vars\":[\"A\",\"B\",\"C\"],\"premises\":[\"A\",\"B\"],\"conclusion\":\"C\",\"claimed\":\"not_entailed\"}",
+      "diag": "一致"
+    },
+    {
+      "name": "oxygen-composition-probability",
+      "verdict": "PASS",
+      "expected": "not_entailed",
+      "machine": "not_entailed",
+      "claimed": "not_entailed",
+      "answer": "{\"vars\":[\"A\",\"B\"],\"premises\":[\"A\"],\"conclusion\":\"B\",\"claimed\":\"not_entailed\"}",
+      "diag": "一致"
+    },
+    {
+      "name": "early-ponens",
+      "verdict": "PASS",
+      "expected": "entailed",
+      "machine": "entailed",
+      "claimed": "entailed",
+      "answer": "{\"vars\":[\"P\",\"Q\"],\"premises\":[[\"imp\",\"P\",\"Q\"],\"P\"],\"conclusion\":\"Q\",\"claimed\":\"entailed\"}",
+      "diag": "一致"
+    },
+    {
+      "name": "all-men-swap",
+      "verdict": "PASS",
+      "expected": "not_entailed",
+      "machine": "not_entailed",
+      "claimed": "not_entailed",
+      "answer": "{\"vars\":[\"M\",\"D\"],\"premises\":[[\"imp\",\"M\",\"D\"]],\"conclusion\":[\"imp\",\"D\",\"M\"],\"claimed\":\"not_entailed\"}",
+      "diag": "一致"
+    },
+    {
+      "name": "socratic-mortal",
+      "verdict": "PASS",
+      "expected": "entailed",
+      "machine": "entailed",
+      "claimed": "entailed",
+      "answer": "{\"vars\":[\"S\",\"D\"],\"premises\":[[\"imp\",\"S\",\"D\"],\"S\"],\"conclusion\":\"D\",\"claimed\":\"entailed\"}",
+      "diag": "一致"
+    },
+    {
+      "name": "survivor-bias",
+      "verdict": "FAIL",
+      "expected": "not_entailed",
+      "machine": "schema_error（key not found: \"not\"）",
+      "claimed": "entailed",
+      "answer": "{\"vars\":[\"S\",\"K\",\"V\"],\"premises\":[[\"imp\",\"V\",\"not\",\"K\"],[\"and\",\"S\",[\"and\",\"V\",[\"not\",\"K\"]]]],\"conclusion\":\"K\",\"claimed\":\"entailed\"}",
+      "diag": "产物缺 premises/conclusion"
+    },
+    {
+      "name": "failure-proverb",
+      "verdict": "FAIL",
+      "expected": "not_entailed",
+      "machine": "schema_error（未知连接词 \"A\"）",
+      "claimed": "not_entailed",
+      "answer": "{\n  \"vars\": [\"A\", \"B\", \"C\"],\n  \"premises\": [[\"A\"], [\"B\"]],\n  \"conclusion\": \"C\",\n  \"claimed\": \"not_entailed\"\n}",
+      "diag": "产物缺 premises/conclusion"
+    }
+  ]
+}

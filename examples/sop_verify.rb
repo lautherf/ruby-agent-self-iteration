@@ -54,26 +54,56 @@ SOP_NL_02_CASES = [
     text: '起得早就能多干一件事（P→Q），今天他起得早（P），所以他多干了一件事（Q）。',
     expected: :entailed,
     note: '有效三段论对照：P→Q, P ⊨ Q，机器应给"无反例"证明。'
+  },
+  {
+    name: 'all-men-swap',
+    title: '量词倒置（限量对调）',
+    text: '所有男人都会死，所以，所有会死的都是男人。',
+    expected: :not_entailed,
+    note: 'A=男人,B=会死。显式前提 A→B（男人→会死）；结论 B→A（会死→男人）。A→B ⊬ B→A（反例：A=false,B=true——有会死的非男人）。'
+  },
+  {
+    name: 'socratic-mortal',
+    title: '有效实例化对照（正例补）',
+    text: '所有人都会死，苏格拉底是人，所以苏格拉底会死。',
+    expected: :entailed,
+    note: 'M=是人,D=会死。前提 M→D, M；结论 D。⊨ 成立（标准三段论实例化）。'
+  },
+  {
+    name: 'survivor-bias',
+    title: '幸存者偏差（筛选样本）',
+    text: '返航的战斗机机翼弹孔最多，说明应该给机翼装更多装甲——因为没回来的飞机都打在了别处。',
+    expected: :not_entailed,
+    note: 'H=机翼弹孔多,B=飞机活着返航,F=该部位是致命伤。显式前提只给了观察（H 与 B 相关）；结论"该部位致命/需加强"推不出——缺的前提：死在别处的样本从未计入（幸存者偏差）。'
+  },
+  {
+    name: 'failure-proverb',
+    title: '谚语全称滥用（过度因果必然化）',
+    text: '失败是成功之母，他失败了很多次，所以他一定会成功。',
+    expected: :not_entailed,
+    note: '显式前提只有"他失败了很多次"(F)；结论"他成功"(E)。F ⊬ E——谚语是倾向性因果不是必然律，把"母亲"全称必然化正是隐藏前提。'
   }
 ].freeze
 
 AST_RULES = <<~TXT
   把下面的自然语言句子翻译成命题逻辑 AST（只表达显式说出的前提与结论，不补"隐藏前提"）：
-  变量用大写字母 A,B,C...（最多 8 个，注释含义）
+  变量用大写字母（最多 3 个），每个变量注释代表一个明确命题。
   连接词白名单（严禁自创）：["not",X] 非X；["and",X,Y] X且Y；["or",X,Y] X或Y；["imp",X,Y] 若X则Y；["iff",X,Y] X当且仅当Y
-  conclusion 必须直接用 vars 里的变量，禁止改动原句的因果含义；premises 与 conclusion 只能使用 vars 中的变量
-  时序/概率/程度等命题逻辑表达不了的语义，一律不可自创操作符，回到变量的布尔组合
+  全称句处理：句子含"所有人/所有X"时，把全称**实例化到句中那个个体**——如"所有人会死，苏格拉底是人"→ 前提 [["imp","S","D"],"S"]、结论 "D"（S=苏格拉底是人,D=苏格拉底会死）。
+  conclusion 必须直译原句"所以"右半句，不得与任一前提同义复制，也不得改换原句的因果含义。
+  claimed 必须先自检：在你自己给出的前提组合下，是否存在"前提全真而结论假"的指派——不存在才可写 entailed。
+  时序/概率/程度等语义，一律用变量的布尔组合忠实表达，禁自创操作符。
   输出纯 JSON（勿多余文字）：
   {"vars":["A","B"],"premises":[["imp","A","B"],"B"],"conclusion":"A",
    "claimed":"not_entailed"}
-  claimed 只能是 "entailed"（这些前提确实推得出结论）或 "not_entailed"（推不出，缺隐藏前提）。
+  claimed 只能是 "entailed" 或 "not_entailed"。
   ⚠ 不许用工具，不许查库，直接纯思考试卷作答。
-  （可选自查：ra 方法库自带 entails?/countermodels/satisfiable? 只读推理接口，可自行心算，不必调用。）
 TXT
 
 SOP_PROMPT = <<~PROMPT
   #{AST_RULES}
   句子：{{TEXT}}
+  ⚠ 你必须用 Action=Final Answer 工具提交，Action Input 填你的 JSON（不要直接输出文本，否则答案不被系统收集）。
 PROMPT
 
 # —— JSON 抽取：取最后一个 '{' 到最后一个 '}' ——
