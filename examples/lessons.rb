@@ -93,3 +93,8 @@ end
 # @doc grade: sop
 def lesson_018
 end
+# @doc note: 真机四轮收束（Y2026-09-15，模型 agnes-2.5-flash）：20 题卷 13/20 → 17/20 → 17/20 → **17/20 (85%)** 稳定——判分器零误判，剩余 3 FAIL 全是模型侧噪声且在轮次间反复轮换，无系统性缺陷。① 共现/因果句（"X导致Y""X与Y共现""X的人Y"——吃了糖病好了/销量高月份溺水多/活到90都喝咖啡）在命题层是**恒真陷阱**：模型把果侧变量（D=溺水、L=长寿）写进前提（["and","A","D"] / ["L"]），结论再取果或取 imp(X,Y) → 机器白拿端元推 entailed。统一规则落进 STAGE2_PROMPT：受审的正是这条因果律，结论只写"果"侧命题变量，前提严禁放果侧观察、严禁写 imp(X,Y)/and(X,Y) 因果前提——机器只在缺因果律的前提集下判 not_entailed 才是诚实裁决。② 模型对规则的遵守不稳定：icecream/coffee/candy 同陷阱三题在轮次间遵守/破功轮换（上轮过下轮又 entailed），judge 不为单题过度拟合。③ 谚语禁令（"一分耕耘一分收获"不得当 imp 前提）落进 prompt 后 harvest 由翻译作弊转正道；④ 空交卷卫生：模型的 JSON 输出变脆（prompt 增长副作用）——run_stage 3 次重试耗尽返回 nil 时 judge 对 provable 类抛 ArgumentError 掀翻整卷，harness 改为判 FAIL（VOID 归因"输出协议违约"）并把重试提到 4 次救场。评审台永不掀桌。
+# @doc tags: 因果共现陷阱,恒真式,果侧不进前提,遵守不稳,空交卷VOID,重试救场,真机85%
+# @doc grade: sop
+def lesson_019
+end

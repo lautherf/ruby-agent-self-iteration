@@ -78,6 +78,7 @@ STAGE1_PROMPT = <<~PROMPT.freeze
     · 只用活下来/被看到的人做样本下结论（"活到90的人都喝咖啡"）→ 幸存者偏差
     · 谚语/习语被当作必然规律 → 谚语全称滥用
     · 一个时间单位有两种分法（"一个半小时"）→ 组块歧义
+    · 全量按互补两半切分后另一半"消失"（"70%海洋30%陆地，那剩下的海洋/陆地去哪了"）→ 互补分割误读
     · 一词两义互换/双关 → 一词多义
     · 概念指东却被叫西（"指南针指北"）→ 名实错位
     · "更早发货"叠在固定运输时长上制造悖论 → 相对时间误用
@@ -91,7 +92,8 @@ PROMPT
 STAGE2_PROMPT = <<~PROMPT.freeze
   把下面的论断翻译成命题逻辑 AST（只表达显式前提与结论，不补隐藏前提）：
   变量用大写字母（最多 3 个）；连接词白名单：["not",X]/["and",X,Y]/["or",X,Y]/["imp",X,Y]/["iff",X,Y]；
-  谚语/习语/倾向性因果不是必然律：除非句子明确陈述"只要X就一定Y"，否则不得写成 ["imp",X,Y] 形式的确定性前提；
+  谚语/习语/倾向性因果不是必然律：除非句子明确陈述"只要X就一定Y"，否则不得写成 ["imp",X,Y] 形式的确定性前提；谚语禁令示例："一分耕耘一分收获""失败是成功之母"这类谚语当条件=谚语全称化，严禁写成 imp 前提；
+  因果/共现句规则（"X导致Y"/"X与Y共现表现"/"X的人Y"句式，如"吃了糖病好了""销量高月份溺水多""活到90都喝咖啡"）：这是把统计相关或时序当因果——受审的正是这条因果律，因此结论只写"果"侧命题变量（Y："病好了"/"溺水"/"长寿"），前提只保留"因"侧观察（X）与其他独立事实，**严禁**把因果/共现写成 ["imp",X,Y] 或 ["and",X,Y] 前提、也**严禁**把"果"侧观察变量放进 premises（那会让机器白拿恒真式 entailed）——机器只在缺了因果律的前提下判 not_entailed，才是诚实裁决；
   conclusion 直译"所以"右半句，不得与前提同义复制，不得改换因果含义；
   含"所有人/所有X"时把全称实例化到句中的个体（"所有人会死，苏格拉底是人"→前提 [["imp","S","D"],"S"]、结论 "D"）。
   suspects（受审槽）：列出承载谬误结构的核心变量——因果混淆的"因"、量词互换的被换项、谚语的必然项等；
@@ -125,7 +127,7 @@ def build_agent
 end
 
 def run_stage(prompt, verifyable: false)
-  3.times do |attempt|
+  4.times do |attempt|
     answer = begin
       build_agent.run(prompt).to_s
     rescue StandardError => e
@@ -140,7 +142,7 @@ def run_stage(prompt, verifyable: false)
       # → 先 warn 重试救场（模型忘填很常见）；最后一试仍缺 → 交还 judge 零自报判 FAIL，
       #   拿诚实成绩单而非空交卷 VOID。
       if !data.key?('suspects')
-        if attempt < 2
+        if attempt < 3
           warn "    ⚠ 第#{attempt + 1}次缺 suspects 字段（受审槽协议），重试…"
           next
         end
@@ -151,7 +153,7 @@ def run_stage(prompt, verifyable: false)
         PropSolver.verify(data['premises'], data['conclusion'])
         true
       rescue StandardError => e
-        warn "    ⚠ 第#{attempt + 1}次机验 crash（#{e.message[0, 40]}），重试…" if attempt < 2
+        warn "    ⚠ 第#{attempt + 1}次机验 crash（#{e.message[0, 40]}），重试…" if attempt < 3
         false
       end
       return data if machine_ok
@@ -159,7 +161,7 @@ def run_stage(prompt, verifyable: false)
       return data unless data.nil?
     end
 
-    warn "    ⚠ 第#{attempt + 1}次 JSON 解析失败/不合法，重试…" if attempt < 2
+    warn "    ⚠ 第#{attempt + 1}次 JSON 解析失败/不合法，重试…" if attempt < 3
   end
   nil
 end
@@ -185,6 +187,18 @@ s2 = if t[:exempt]
            else
              run_stage(STAGE2_PROMPT.gsub('{{TEXT}}', t[:text]), verifyable: true)
            end
+
+  # 空交卷卫生：provable 类 3 次尝试全失败（JSON 解析不掉/机验 crash）→ run_stage 返回 nil，
+  #   judge 会对 nil 抛 ArgumentError 掀翻整卷——这里判 FAIL（VOID）并给出归因，诚实成绩单不该崩。
+  if !t[:exempt] && s2.nil?
+    verdict = 'FAIL'
+    j_diag = '空交卷 VOID：3 次尝试 JSON 不合法/机验 crash（非推理欺诈，是输出协议违约）'
+    puts "  #{verdict}  #{t[:name]} [#{t[:fault]}]"
+    puts "    └ 解剖=#{s1.is_a?(Hash) ? s1['fault_type'] : '∅'}(标答 #{t[:fault]})；#{j_diag}"
+    next({ name: t[:name], fault: t[:fault], exempt: false, verdict: verdict,
+           s1: s1 && { fault_type: s1['fault_type'], hidden_premise: s1['hidden_premise'], reason: s1['reason'] },
+           s2: nil, diag: j_diag })
+  end
 
   j = SopPipe.judge(s1, s2, t[:fault])
   verdict = j.pass ? 'PASS' : 'FAIL'
