@@ -202,6 +202,18 @@ class SopPipeSpec < Minitest::Test
     assert j.pass
   end
 
+  def test_correct_reasoning_suspect_flagging_never_isolates
+    # 正确推理类模型偶发自报 suspects（把前提变量当受审槽报出）——隔离锁按定义不碰
+    # :entailed 类（无受审槽概念），即便 suspects ∩ 顶层 premises ≠ ∅ 也恒绿；
+    # 正确性完全交给机验锁（必须真 entailed）。这是解锁语义，不是放水。
+    stage1 = { 'fault_type' => SopPipe::CORRECT }
+    stage2 = { 'premises' => [['imp', 'A', 'B'], 'A'], 'conclusion' => 'B',
+               'claimed' => 'entailed', 'suspects' => ['A'] }
+    j = SopPipe.judge(stage1, stage2, SopPipe::CORRECT)
+    assert j.pass, "正确推理类隔离锁恒绿：#{(j.diag || '')}"
+    assert j.isolated
+  end
+
   def test_exempt_semantics_pass_suspect_lock_by_default
     stage1 = { 'fault_type' => '一词多义', 'hidden_premise' => '…' }
     j = SopPipe.judge(stage1, nil, '一词多义')
