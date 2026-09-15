@@ -308,6 +308,26 @@ def main
             end
       machine = orders.first[pos - 1]
       pass = machine == target_obj
+      # 概念题唯一解但答案不符 → 语义层方向极可能翻转，补一次复查方向（仅失败时花一次调用）
+      if !pass && !offline && %w[new old expensive cheap first].include?(head.to_s) && extra_runs < 3
+        recheck = run_semantic(BBH_OFFICIAL_PROMPT.gsub('{{OBJECTS}}', objects.inspect)
+                                                   .gsub('{{TEXT}}', input + "\n\n⚠ 复查：上次将 more/…er 关系编成了 after，请确认 head 与 before/after 的方向完全一致."))
+        if recheck
+          cons2 = (cons | recheck['constraints'])
+          begin
+            orders2 = solve_orders(objects, cons2, head)
+          rescue StandardError
+            orders2 = []
+          end
+          if orders2.size == 1
+            cons = cons2
+            orders = orders2
+            machine = orders.first[pos - 1]
+            pass = machine == target_obj
+            warn "    ↻ 概念题复查方向：machine=#{machine.inspect} target=#{target_obj.inspect} pass=#{pass}"
+          end
+        end
+      end
       stats[:pass] += 1 if pass
       stats[:fail_miss] += 1 unless pass
       rows << { idx: i, verdict: pass ? 'PASS' : 'FAIL', head: head, cons: cons,
