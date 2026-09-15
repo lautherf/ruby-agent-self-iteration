@@ -43,11 +43,15 @@ BBH_OFFICIAL_PROMPT = <<~PROMPT.freeze
     ["after","X","Y"]        X 排在 Y 后
     ["adjacent","X","Y"]     X 与 Y 相邻
     ["between","X","Y","Z"]  X 夹在 Y 与 Z 之间
-    ["rank","X",k,"left"]    X 是从左数第 k 个（同样支持 "right"：从右数第 k 个）
-  方向约定（全题统一一个序向）：more/…er（更新、更贵、更高、更左、finish above…）→ before；反义（更旧、更便宜、below…）→ after。
+    ["rank","X",k,"left"]    X 是从左数第 k 个（物理方位题专用）。概念题（新旧/贵贱/名次）禁止用 left/right！
+    ["rank","X",k,"old"]     X 是该概念端点第 k 个（概念题专用）：
+                               "X is the oldest"→["rank","X",1,"old"]、"the newest"→["rank","X",1,"new"]、
+                               "the most expensive"→["rank","X",1,"expensive"]、"the cheapest"→["rank","X",1,"cheap"]、
+                               "finished first"→["rank","X",1,"first"]、"the second-newest"→["rank","X",2,"new"]。
+  方向约定（全题统一一个序向）：more/…er（更新、更贵、更高、finish above…）→ before；反义（更旧、更便宜、below…）→ after。
   端名句直接用 rank 表达："X is the leftmost"→["rank","X",1,"left"]；"X is the rightmost"→["rank","X",1,"right"]；
   "X is the second from the left"→["rank","X",2,"left"]；"X is in the middle"→["rank","X",2,"left"]。
-  另给序头声明 head ∈ {left, right, new, old, expensive, cheap, first}：本排序"最前/最高/最左/最新/最贵/第一名"端对应哪个概念（与你的 before 方向一致）。
+  另给序头声明 head ∈ {left, right, new, old, expensive, cheap, first}：本排序"最前/最高/最左/最新/最贵/第一名"端对应哪个概念（与你的 before 方向一致；方向判断失误会导致整题错解，务必让 head 的方向与约束一致：若 before=更旧，head 应为 old）。
   输出纯 JSON：{"objects":["…"],"constraints":[["before","…","…"],…],"head":"left"}
   ⚠ 用 Action=Final Answer 提交，Action Input 填 JSON。
   题干：
@@ -65,18 +69,14 @@ def objlist_from(input)
 end
 
 # 按序头把选项谓词化 → {:obj, :rank(从序头数第几个), :side(:h 头端/:t 尾端)}
-def rank_for(body, head)
-  n = 3
-  case head
-  when 'left'
-    return [1, :h] if body[/leftmost/]
-    return [1, :t] if body[/rightmost/]
-    return [2, :h] if body[/second from the left/]
-    return [3, :h] if body[/third from the left/]
-  when 'right'
-    return [1, :h] if body[/rightmost/]
-    return [1, :t] if body[/leftmost/]
-    return [2, :h] if body[/second from the right/]
+def rank_for(body, _head)
+  # 方位词是绝对坐标：排列本身就是左→右，无需 head（:abs 直接定位）
+  return [3, :abs] if body[/rightmost/]
+  return [1, :abs] if body[/leftmost/]
+  return [2, :abs] if body[/second from the (?:left|right)/]
+  return [3, :abs] if body[/third from the left/]
+  # 概念词才需要 head 声明序向；语义层已保证 before=more，概念序头恒≡序头(order[0])
+  case _head
   when 'new'
     return [2, :h] if body[/second-newest|second newest/]
     return [2, :t] if body[/second-oldest|second oldest/]
@@ -85,8 +85,8 @@ def rank_for(body, head)
   when 'old'
     return [1, :h] if body[/oldest/]
     return [2, :h] if body[/second-oldest|second oldest/]
-    return [1, :t] if body[/newest/]
     return [2, :t] if body[/second-newest|second newest/]
+    return [1, :t] if body[/newest/]
   when 'expensive'
     return [2, :h] if body[/second-most|second most/]
     return [2, :t] if body[/second-cheapest|second cheapest/]
@@ -132,8 +132,8 @@ def normalize_arg(arg, names)
   hit || arg
 end
 
-def solve_orders(names, constraints)
-  side_words = %w[left right]
+def solve_orders(names, constraints, head = nil)
+  side_words = %w[left right new old expensive cheap first last]
   normed = constraints.map do |c|
     c.map { |a| a.is_a?(String) && !side_words.include?(a) ? normalize_arg(a, names) : a }
   end
@@ -144,10 +144,13 @@ def solve_orders(names, constraints)
       end
     end
   end
-  names.permutation(names.size).select { |o| normed.all? { |c| satisfies?(o, c) } }
+  names.permutation(names.size).select { |o| normed.all? { |c| satisfies?(o, c, head) } }
 end
 
-def satisfies?(order, c)
+OPPOSITE = { 'new' => 'old', 'old' => 'new', 'expensive' => 'cheap', 'cheap' => 'expensive',
+             'first' => 'last', 'last' => 'first', 'left' => 'right', 'right' => 'left' }.freeze
+
+def satisfies?(order, c, head = nil)
   n = order.size
   case c[0]
   when 'before'   then idx(order, c[1]) < idx(order, c[2])
@@ -157,8 +160,19 @@ def satisfies?(order, c)
     y, x, z = c[2], c[1], c[3]
     (idx(order, y) < idx(order, x) && idx(order, x) < idx(order, z)) ||
       (idx(order, z) < idx(order, x) && idx(order, x) < idx(order, y))
-  when 'rank' # ["rank","X",k,side(left/right)]
-    pos = c[3] == 'right' ? n - c[2].to_i + 1 : c[2].to_i
+  when 'rank' # ["rank","X",k,side]；side=物理(l/r)或概念(new/old/expensive/cheap/first/last)
+    side = c[3]
+    pos = if side == 'right'
+            n - c[2].to_i + 1
+          elsif side == 'left'
+            c[2].to_i
+          elsif head && side == head
+            c[2].to_i
+          elsif head && OPPOSITE[side] == head
+            n - c[2].to_i + 1
+          else
+            raise "rank 概念端 #{side} 无法在 head=#{head} 下定位"
+          end
     idx(order, c[1]) == pos
   end
 end
@@ -190,19 +204,20 @@ def main
   examples = data['examples'].drop(offset)
 
   if ARGV.include?('--syntax')
-    heads = %w[left right new old expensive cheap first]
+    concept_heads = %w[new old expensive cheap first]
     ok_obj = 0; solvable_opt = 0; unsolvable_opt = 0
     examples.each do |ex|
       objs = objlist_from(ex['input']).first(3)
       ok_obj += 1 if objs.size == 3
       tgt = ex['target'][/\(([A-C])\)/, 1]
       txt = ex['input'][/Options:\n(.*)/m, 1].to_s.lines.find { |l| l.start_with?("(#{tgt})") }.to_s.strip
-      hits = heads.count { |h| rank_for(txt, h).first }
-      solvable_opt += 1 if hits.positive?
-      unsolvable_opt += 1 if hits.zero?
-      puts "  obj=%s hits=%d %s" % [objs.size == 3 ? 'ok ' : 'NO ', hits, txt[0, 66]]
+      solvable = !rank_for(txt, concept_heads.first).first.nil? ||
+                 concept_heads.any? { |h| rank_for(txt, h).first }
+      solvable_opt += 1 if solvable
+      unsolvable_opt += 1 unless solvable
+      puts "  obj=%s %s %s" % [objs.size == 3 ? 'ok ' : 'NO ', solvable ? 'solvable ' : 'UNSOLVABLE', txt[0, 66]]
     end
-    puts "── 对象解析 #{ok_obj}/#{examples.size}；目标选项端可解释 #{solvable_opt}/#{examples.size}；不可解 #{unsolvable_opt} ──"
+    puts "── 对象解析 #{ok_obj}/#{examples.size}；目标选项可定位 #{solvable_opt}/#{examples.size}；不可解 #{unsolvable_opt} ──"
     exit
   end
 
@@ -232,7 +247,7 @@ def main
       head ||= llm['head']
       extra_runs += 1
       orders = begin
-        solve_orders(objects, cons)
+        solve_orders(objects, cons, head)
       rescue StandardError => e
         stats[:crash] += 1
         rows << { idx: i, verdict: 'FAIL', diag: "crash #{e.message[0, 50]}" }
@@ -263,16 +278,17 @@ def main
     rank, side = opts[target_letter] ? opts[target_letter].values_at(:rank, :side) : [nil, nil]
     target_obj = opts[target_letter] && opts[target_letter][:obj]
     if rank.nil? || target_obj.nil?
-      backup = %w[left right new old expensive cheap first].find do |h|
+      concept_heads = %w[new old expensive cheap first]
+      backup = concept_heads.find do |h|
         next if h == head
-        b_rank, b_side = rank_for((opts[target_letter] || {})[:text].to_s, h)
+        b_rank, _b_side = rank_for((opts[target_letter] || {})[:text].to_s, h)
         !b_rank.nil?
       end
       if backup
         opts = parse_options(input, objects, backup)
         rank, side = opts[target_letter].values_at(:rank, :side)
         target_obj = opts[target_letter][:obj]
-        warn "    ↻ head #{head.inspect} 无法解释选项，机器按选项文本改判 #{backup.inspect}"
+        warn "    ↻ head #{head.inspect} 无法解释概念词选项，机器按序向改判 #{backup.inspect}"
         head = backup
       end
     end
@@ -284,11 +300,11 @@ def main
     end
 
     if orders.size == 1
-      # head=right 时头端在序列末尾（排列为左→右），pos 需翻转
-      pos = if head == 'right'
-              side == :t ? rank : 3 - rank + 1
-            else
-              side == :h ? rank : 3 - rank + 1
+      # :abs=绝对坐标直接定位; :h=概念序头第rank(=order[rank-1]); :t=概念尾端第rank
+      pos = case side
+            when :abs then rank
+            when :h   then rank
+            else 3 - rank + 1
             end
       machine = orders.first[pos - 1]
       pass = machine == target_obj
