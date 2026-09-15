@@ -1,0 +1,443 @@
+{
+  "generated_at": "2026-09-15T16:27:59+08:00",
+  "model": "agnes-2.5-flash",
+  "total": 20,
+  "rows": [
+    {
+      "idx": 0,
+      "verdict": "PASS",
+      "head": "new",
+      "cons": [
+        [
+          "before",
+          "a truck",
+          "a station wagon"
+        ],
+        [
+          "rank",
+          "a motorcyle",
+          3,
+          "new"
+        ]
+      ],
+      "order": "a truck < a station wagon < a motorcyle",
+      "pos": 1,
+      "machine": "a truck",
+      "target_obj": "a truck"
+    },
+    {
+      "idx": 1,
+      "verdict": "PASS",
+      "head": "first",
+      "cons": [
+        [
+          "before",
+          "Dan",
+          "Amy"
+        ],
+        [
+          "before",
+          "Amy",
+          "Mel"
+        ]
+      ],
+      "order": "Dan < Amy < Mel",
+      "pos": 2,
+      "machine": "Amy",
+      "target_obj": "Amy"
+    },
+    {
+      "idx": 2,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "rank",
+          "a green book",
+          1,
+          "left"
+        ],
+        [
+          "before",
+          "a orange book",
+          "a blue book"
+        ]
+      ],
+      "order": "a green book < an orange book < a blue book",
+      "pos": 2,
+      "machine": "an orange book",
+      "target_obj": "an orange book"
+    },
+    {
+      "idx": 3,
+      "verdict": "PASS",
+      "head": "new",
+      "cons": [
+        [
+          "before",
+          "a convertible",
+          "a motorcyle"
+        ],
+        [
+          "before",
+          "a motorcyle",
+          "a limousine"
+        ]
+      ],
+      "order": "a convertible < a motorcyle < a limousine",
+      "pos": 1,
+      "machine": "a convertible",
+      "target_obj": "a convertible"
+    },
+    {
+      "idx": 4,
+      "verdict": "PASS",
+      "head": "first",
+      "cons": [
+        [
+          "before",
+          "Eve",
+          "Dan"
+        ],
+        [
+          "before",
+          "Dan",
+          "Joe"
+        ]
+      ],
+      "order": "Eve < Dan < Joe",
+      "pos": 3,
+      "machine": "Joe",
+      "target_obj": "Joe"
+    },
+    {
+      "idx": 5,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "before",
+          "a yellow book",
+          "a blue book"
+        ],
+        [
+          "rank",
+          "an orange book",
+          2,
+          "left"
+        ]
+      ],
+      "order": "a yellow book < an orange book < a blue book",
+      "pos": 1,
+      "machine": "a yellow book",
+      "target_obj": "a yellow book"
+    },
+    {
+      "idx": 6,
+      "verdict": "PASS",
+      "head": "first",
+      "cons": [
+        [
+          "rank",
+          "Eli",
+          2,
+          "first"
+        ],
+        [
+          "after",
+          "Eli",
+          "Amy"
+        ]
+      ],
+      "order": "Amy < Eli < Ana",
+      "pos": 1,
+      "machine": "Amy",
+      "target_obj": "Amy"
+    },
+    {
+      "idx": 7,
+      "verdict": "PASS",
+      "head": "expensive",
+      "cons": [
+        [
+          "before",
+          "plums",
+          "pears"
+        ],
+        [
+          "before",
+          "pears",
+          "apples"
+        ]
+      ],
+      "order": "plums < pears < apples",
+      "pos": 1,
+      "machine": "plums",
+      "target_obj": "plums"
+    },
+    {
+      "idx": 8,
+      "verdict": "PASS",
+      "head": "first",
+      "cons": [
+        [
+          "rank",
+          "Eli",
+          3,
+          "first"
+        ],
+        [
+          "rank",
+          "Mya",
+          2,
+          "first"
+        ]
+      ],
+      "order": "Eve < Mya < Eli",
+      "pos": 3,
+      "machine": "Eli",
+      "target_obj": "Eli"
+    },
+    {
+      "idx": 9,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "before",
+          "a hawk",
+          "a robin"
+        ],
+        [
+          "rank",
+          "an owl",
+          1,
+          "left"
+        ]
+      ],
+      "order": "an owl < a hawk < a robin",
+      "pos": 3,
+      "machine": "a robin",
+      "target_obj": "a robin"
+    },
+    {
+      "idx": 10,
+      "verdict": "PASS",
+      "head": "first",
+      "cons": [
+        [
+          "rank",
+          "Mel",
+          3,
+          "first"
+        ],
+        [
+          "rank",
+          "Ana",
+          2,
+          "first"
+        ]
+      ],
+      "order": "Ada < Ana < Mel",
+      "pos": 1,
+      "machine": "Ada",
+      "target_obj": "Ada"
+    },
+    {
+      "idx": 11,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "before",
+          "an orange book",
+          "a white book"
+        ],
+        [
+          "rank",
+          "a purple book",
+          3,
+          "left"
+        ]
+      ],
+      "order": "an orange book < a white book < a purple book",
+      "pos": 3,
+      "machine": "a purple book",
+      "target_obj": "a purple book"
+    },
+    {
+      "idx": 12,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "before",
+          "a hawk",
+          "a cardinal"
+        ],
+        [
+          "rank",
+          "a hawk",
+          2,
+          "left"
+        ]
+      ],
+      "order": "a falcon < a hawk < a cardinal",
+      "pos": 1,
+      "machine": "a falcon",
+      "target_obj": "a falcon"
+    },
+    {
+      "idx": 13,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "rank",
+          "a crow",
+          2,
+          "left"
+        ],
+        [
+          "before",
+          "a hummingbird",
+          "a crow"
+        ]
+      ],
+      "order": "a hummingbird < a crow < a quail",
+      "pos": 2,
+      "machine": "a crow",
+      "target_obj": "a crow"
+    },
+    {
+      "idx": 14,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "before",
+          "a yellow book",
+          "a red book"
+        ],
+        [
+          "before",
+          "a red book",
+          "a green book"
+        ]
+      ],
+      "order": "a yellow book < a red book < a green book",
+      "pos": 3,
+      "machine": "a green book",
+      "target_obj": "a green book"
+    },
+    {
+      "idx": 15,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "rank",
+          "a crow",
+          2,
+          "left"
+        ],
+        [
+          "before",
+          "a hummingbird",
+          "a crow"
+        ]
+      ],
+      "order": "a hummingbird < a crow < a quail",
+      "pos": 1,
+      "machine": "a hummingbird",
+      "target_obj": "a hummingbird"
+    },
+    {
+      "idx": 16,
+      "verdict": "PASS",
+      "head": "new",
+      "cons": [
+        [
+          "rank",
+          "a motorcyle",
+          2,
+          "new"
+        ],
+        [
+          "before",
+          "a minivan",
+          "a motorcyle"
+        ]
+      ],
+      "order": "a minivan < a motorcyle < a sedan",
+      "pos": 1,
+      "machine": "a minivan",
+      "target_obj": "a minivan"
+    },
+    {
+      "idx": 17,
+      "verdict": "PASS",
+      "head": "first",
+      "cons": [
+        [
+          "before",
+          "Mel",
+          "Joe"
+        ],
+        [
+          "before",
+          "Joe",
+          "Rob"
+        ]
+      ],
+      "order": "Mel < Joe < Rob",
+      "pos": 1,
+      "machine": "Mel",
+      "target_obj": "Mel"
+    },
+    {
+      "idx": 18,
+      "verdict": "FAIL",
+      "head": "right",
+      "cons": [
+        [
+          "before",
+          "a hawk",
+          "a raven"
+        ],
+        [
+          "rank",
+          "a crow",
+          3,
+          "right"
+        ]
+      ],
+      "order": "a crow < a hawk < a raven",
+      "pos": 3,
+      "machine": "a raven",
+      "target_obj": "a crow"
+    },
+    {
+      "idx": 19,
+      "verdict": "PASS",
+      "head": "expensive",
+      "cons": [
+        [
+          "before",
+          "peaches",
+          "apples"
+        ],
+        [
+          "rank",
+          "mangoes",
+          1,
+          "cheap"
+        ]
+      ],
+      "order": "peaches < apples < mangoes",
+      "pos": 1,
+      "machine": "peaches",
+      "target_obj": "peaches"
+    }
+  ]
+}

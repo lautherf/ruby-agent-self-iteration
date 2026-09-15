@@ -1,7 +1,7 @@
 {
-  "generated_at": "2026-09-15T14:56:39+08:00",
+  "generated_at": "2026-09-15T15:02:52+08:00",
   "model": "agnes-2.5-flash",
-  "total": 12,
+  "total": 20,
   "rows": [
     {
       "idx": 0,
@@ -97,8 +97,8 @@
         [
           "rank",
           "a red book",
-          1,
-          "right"
+          3,
+          "left"
         ],
         [
           "after",
@@ -186,7 +186,7 @@
         ],
         [
           "rank",
-          "an orange book",
+          "a orange book",
           2,
           "left"
         ]
@@ -224,13 +224,13 @@
       "cons": [
         [
           "before",
-          "a gray book",
-          "a purple book"
+          "a purple book",
+          "a red book"
         ],
         [
           "before",
-          "a purple book",
-          "a red book"
+          "a gray book",
+          "a purple book"
         ]
       ],
       "order": "a gray book < a purple book < a red book",
@@ -249,16 +249,190 @@
           "apples"
         ],
         [
-          "rank",
+          "after",
           "mangoes",
-          3,
-          "left"
+          "apples"
         ]
       ],
       "order": "peaches < apples < mangoes",
       "pos": 2,
       "machine": "apples",
       "target_obj": "apples"
+    },
+    {
+      "idx": 12,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "after",
+          "a blue jay",
+          "a falcon"
+        ],
+        [
+          "before",
+          "a hummingbird",
+          "a falcon"
+        ]
+      ],
+      "order": "a hummingbird < a falcon < a blue jay",
+      "pos": 2,
+      "machine": "a falcon",
+      "target_obj": "a falcon"
+    },
+    {
+      "idx": 13,
+      "verdict": "PASS",
+      "head": "new",
+      "cons": [
+        [
+          "before",
+          "a minivan",
+          "a sedan"
+        ],
+        [
+          "before",
+          "a bus",
+          "a minivan"
+        ]
+      ],
+      "order": "a bus < a minivan < a sedan",
+      "pos": 2,
+      "machine": "a minivan",
+      "target_obj": "a minivan"
+    },
+    {
+      "idx": 14,
+      "verdict": "PASS",
+      "head": "new",
+      "cons": [
+        [
+          "after",
+          "a convertible",
+          "a tractor"
+        ],
+        [
+          "rank",
+          "a hatchback",
+          2,
+          "left"
+        ]
+      ],
+      "order": "a tractor < a hatchback < a convertible",
+      "pos": 2,
+      "machine": "a hatchback",
+      "target_obj": "a hatchback"
+    },
+    {
+      "idx": 15,
+      "verdict": "PASS",
+      "head": "expensive",
+      "cons": [
+        [
+          "rank",
+          "watermelons",
+          2,
+          "left"
+        ],
+        [
+          "before",
+          "loquats",
+          "cantaloupes"
+        ]
+      ],
+      "order": "loquats < watermelons < cantaloupes",
+      "pos": 1,
+      "machine": "loquats",
+      "target_obj": "loquats"
+    },
+    {
+      "idx": 16,
+      "verdict": "PASS",
+      "head": "expensive",
+      "cons": [
+        [
+          "before",
+          "kiwis",
+          "watermelons"
+        ],
+        [
+          "rank",
+          "kiwis",
+          2,
+          "left"
+        ]
+      ],
+      "order": "mangoes < kiwis < watermelons",
+      "pos": 1,
+      "machine": "mangoes",
+      "target_obj": "mangoes"
+    },
+    {
+      "idx": 17,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "rank",
+          "a blue book",
+          1,
+          "right"
+        ],
+        [
+          "rank",
+          "an orange book",
+          1,
+          "left"
+        ]
+      ],
+      "order": "an orange book < a red book < a blue book",
+      "pos": 3,
+      "machine": "a blue book",
+      "target_obj": "a blue book"
+    },
+    {
+      "idx": 18,
+      "verdict": "PASS",
+      "head": "first",
+      "cons": [
+        [
+          "after",
+          "Mya",
+          "Ada"
+        ],
+        [
+          "before",
+          "Mel",
+          "Ada"
+        ]
+      ],
+      "order": "Mel < Ada < Mya",
+      "pos": 3,
+      "machine": "Mya",
+      "target_obj": "Mya"
+    },
+    {
+      "idx": 19,
+      "verdict": "PASS",
+      "head": "first",
+      "cons": [
+        [
+          "rank",
+          "Mel",
+          1,
+          "right"
+        ],
+        [
+          "rank",
+          "Ana",
+          2,
+          "right"
+        ]
+      ],
+      "order": "Ada < Ana < Mel",
+      "pos": 3,
+      "machine": "Mel",
+      "target_obj": "Mel"
     }
   ]
 }

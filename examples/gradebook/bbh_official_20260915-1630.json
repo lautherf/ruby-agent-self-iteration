@@ -1,0 +1,222 @@
+{
+  "generated_at": "2026-09-15T16:30:42+08:00",
+  "model": "agnes-2.5-flash",
+  "total": 10,
+  "rows": [
+    {
+      "idx": 0,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "before",
+          "a hummingbird",
+          "an owl"
+        ],
+        [
+          "before",
+          "an owl",
+          "a falcon"
+        ]
+      ],
+      "order": "a hummingbird < an owl < a falcon",
+      "pos": 2,
+      "machine": "an owl",
+      "target_obj": "an owl"
+    },
+    {
+      "idx": 1,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "before",
+          "a purple book",
+          "a red book"
+        ],
+        [
+          "before",
+          "a gray book",
+          "a purple book"
+        ]
+      ],
+      "order": "a gray book < a purple book < a red book",
+      "pos": 2,
+      "machine": "a purple book",
+      "target_obj": "a purple book"
+    },
+    {
+      "idx": 2,
+      "verdict": "PASS",
+      "head": "new",
+      "cons": [
+        [
+          "before",
+          "a minivan",
+          "a sedan"
+        ],
+        [
+          "before",
+          "a bus",
+          "a minivan"
+        ]
+      ],
+      "order": "a bus < a minivan < a sedan",
+      "pos": 3,
+      "machine": "a sedan",
+      "target_obj": "a sedan"
+    },
+    {
+      "idx": 3,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "before",
+          "a white book",
+          "a gray book"
+        ],
+        [
+          "rank",
+          "a red book",
+          2,
+          "left"
+        ]
+      ],
+      "order": "a white book < a red book < a gray book",
+      "pos": 3,
+      "machine": "a gray book",
+      "target_obj": "a gray book"
+    },
+    {
+      "idx": 4,
+      "verdict": "PASS",
+      "head": "new",
+      "cons": [
+        [
+          "rank",
+          "a tractor",
+          2,
+          "new"
+        ],
+        [
+          "before",
+          "a minivan",
+          "a convertible"
+        ]
+      ],
+      "order": "a minivan < a tractor < a convertible",
+      "pos": 3,
+      "machine": "a convertible",
+      "target_obj": "a convertible"
+    },
+    {
+      "idx": 5,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "before",
+          "a yellow book",
+          "a blue book"
+        ],
+        [
+          "rank",
+          "an orange book",
+          2,
+          "left"
+        ]
+      ],
+      "order": "a yellow book < an orange book < a blue book",
+      "pos": 3,
+      "machine": "a blue book",
+      "target_obj": "a blue book"
+    },
+    {
+      "idx": 6,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "before",
+          "a crow",
+          "an owl"
+        ],
+        [
+          "rank",
+          "an owl",
+          2,
+          "left"
+        ]
+      ],
+      "order": "a crow < an owl < a cardinal",
+      "pos": 3,
+      "machine": "a cardinal",
+      "target_obj": "a cardinal"
+    },
+    {
+      "idx": 7,
+      "verdict": "PASS",
+      "head": "new",
+      "cons": [
+        [
+          "before",
+          "a truck",
+          "a minivan"
+        ],
+        [
+          "before",
+          "a minivan",
+          "a tractor"
+        ]
+      ],
+      "order": "a truck < a minivan < a tractor",
+      "pos": 3,
+      "machine": "a tractor",
+      "target_obj": "a tractor"
+    },
+    {
+      "idx": 8,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "before",
+          "a white book",
+          "a gray book"
+        ],
+        [
+          "rank",
+          "a red book",
+          2,
+          "left"
+        ]
+      ],
+      "order": "a white book < a red book < a gray book",
+      "pos": 2,
+      "machine": "a red book",
+      "target_obj": "a red book"
+    },
+    {
+      "idx": 9,
+      "verdict": "PASS",
+      "head": "first",
+      "cons": [
+        [
+          "before",
+          "Joe",
+          "Ana"
+        ],
+        [
+          "before",
+          "Rob",
+          "Joe"
+        ]
+      ],
+      "order": "Rob < Joe < Ana",
+      "pos": 2,
+      "machine": "Joe",
+      "target_obj": "Joe"
+    }
+  ]
+}
