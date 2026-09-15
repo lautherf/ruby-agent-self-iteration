@@ -207,4 +207,23 @@ class SopPipeSpec < Minitest::Test
     j = SopPipe.judge(stage1, nil, '一词多义')
     assert j.pass, "语义豁免类不受隔离锁约束：#{(j.diag || '')}"
   end
+
+  def test_malformed_premises_type_never_crashes_judge
+    # 真机模型偶发把 premises 交付成非数组值（字符串/散列）——Array & String 会 TypeError，
+    # 但该比较点不在机验 rescue 内 → 判分器整卷掀桌。必须兜底判 FAIL 而不是抛异常。
+    stage1 = { 'fault_type' => '因果混淆', 'hidden_premise' => '…', 'reason' => '…' }
+    stage2 = { 'premises' => 'I', 'conclusion' => 'D',
+               'claimed' => 'not_entailed', 'suspects' => ['I'] }
+    j = SopPipe.judge(stage1, stage2, '因果混淆')
+    refute j.pass, "畸形 premises 应判 FAIL 而非崩溃：#{(j.diag || '')}"
+  end
+
+  def test_malformed_premises_array_wrapped_in_diag
+    stage1 = { 'fault_type' => '三段论滥用', 'hidden_premise' => '…', 'reason' => '…' }
+    stage2 = { 'premises' => ['B'], 'conclusion' => 'A',
+               'claimed' => 'not_entailed', 'suspects' => [] }
+    j = SopPipe.judge(stage1, stage2, '三段论滥用')
+    assert_includes j.diag, '零自报'
+    refute j.pass
+  end
 end

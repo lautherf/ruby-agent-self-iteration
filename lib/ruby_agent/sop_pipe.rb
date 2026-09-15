@@ -90,8 +90,10 @@ module SopPipe
       #   · 受审槽 ∈ 顶层 premises = 翻译作弊实锤（受审槽混进合法前提台）→ 零赦红
       #   · 受审槽仅是复合前提的成分变量 = 合法构成，不斩（机验锁继续背书）
       #   · 正确推理(:entailed)/豁免(nil) 不碰受审槽 → 恒绿
+      #   注：premises 顶层可能被模型交付为非数组畸形值（字符串等）→ Array() 兜底比交集，
+      #      让隔离锁判 FAIL 而不是 TypeError 掀翻整个判分器（机验锁已 crash 兜底）。
       isolated = expected == :entailed || expected.nil? ||
-                 suspects.any? && (suspects & premises).empty?
+                 suspects.any? && (suspects & Array(premises)).empty?
     else
       verify_ok = true
       claimed_ok = true
@@ -129,7 +131,7 @@ module SopPipe
         if suspects.empty?
           parts << '隔离锁红：受审槽零自报（藏被告不发审）'
         else
-          smuggled = suspects & (stage2['premises'] || [])
+          smuggled = suspects & Array(stage2['premises'])
           parts << "隔离锁红：受审槽 #{smuggled.inspect} 走私上合法前提台"
         end
       end
