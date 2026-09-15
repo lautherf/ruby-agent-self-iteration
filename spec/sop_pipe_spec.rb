@@ -226,4 +226,15 @@ class SopPipeSpec < Minitest::Test
     assert_includes j.diag, '零自报'
     refute j.pass
   end
+
+  def test_multi_tag_suspect_lock_still_guards
+    # 复合错位"因果混淆,量词误用"：解剖锁按交集判缺、隔离锁对受审槽独立生效——
+    # 受审槽 I 顶层走私是翻译作弊实锤，与 fault 是否复合无关，照斩（锁与锁互不稀释）
+    stage1 = { 'fault_type' => '因果混淆,量词误用', 'hidden_premise' => '…' }
+    stage2 = { 'premises' => ['I'], 'conclusion' => 'D',
+               'claimed' => 'not_entailed', 'suspects' => ['I'] }
+    j = SopPipe.judge(stage1, stage2, '因果混淆')
+    refute j.pass, "多标签下受审槽走私仍应斩：#{(j.diag || '')}"
+    refute j.isolated
+  end
 end

@@ -136,6 +136,17 @@ def run_stage(prompt, verifyable: false)
 
     data = extract_json(answer)
     if data.is_a?(Hash) && verifyable && data['premises'] && data['conclusion']
+      # 第四锁协议卫生：谬误类必须交付 suspects 字段（受审槽自报），字段整体缺失
+      # → 先 warn 重试救场（模型忘填很常见）；最后一试仍缺 → 交还 judge 零自报判 FAIL，
+      #   拿诚实成绩单而非空交卷 VOID。
+      if !data.key?('suspects')
+        if attempt < 2
+          warn "    ⚠ 第#{attempt + 1}次缺 suspects 字段（受审槽协议），重试…"
+          next
+        end
+        return data
+      end
+
       machine_ok = begin
         PropSolver.verify(data['premises'], data['conclusion'])
         true
