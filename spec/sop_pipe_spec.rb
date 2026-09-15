@@ -265,4 +265,53 @@ class SopPipeSpec < Minitest::Test
     assert j.pass, "机器 not_entailed 时受审槽顶层=显式事实，隔离锁应豁免：#{(j.diag || '')}"
     assert j.isolated
   end
+
+  # ── 升降维自洽锁（SOP-NL-03·第5锁·元层注视）──
+  # 尺度决策显式化：解剖层必须自报 mode（mechanical/semantic/hybrid）。
+  # 元层是"注视不计红"：豁免门由 fault 白名单把守，mode 不参与豁免判定——报 semantic 逃机验
+  # 在结构上无实益；agent 对"含语义成分的可验证类"天真自报 semantic 是诚实误报，执法=惩罚诚实。
+  # 因此可验证类自报 semantic 只记 diag 背离注记，不影响 PASS；豁免类报 semantic 自然一致。
+
+  def test_provable_self_reporting_semantic_flagged_not_failed
+    # 三段论滥用是布尔可还原类（必 not_entailed），agent 却称 mode=semantic → diag 背离注记
+    # 但不计红（机验与自报全绿，judge 不应惩罚诚实误报）
+    stage1 = { 'fault_type' => '三段论滥用', 'mode' => 'semantic', 'hidden_premise' => '…' }
+    stage2 = { 'premises' => ['B'], 'conclusion' => 'A',
+               'claimed' => 'not_entailed', 'suspects' => ['A'] }
+    j = SopPipe.judge(stage1, stage2, '三段论滥用')
+    assert j.pass, "mode 自报背离只注视不计红：#{(j.diag || '')}"
+    assert j.fault_hit && j.verify_hit
+    refute j.meta_ok # 背离信号仍暴露在 meta_ok 字段备用
+    assert_includes j.diag, 'mode=semantic'
+  end
+
+  def test_correct_reasoning_self_reporting_semantic_flagged_not_failed
+    stage1 = { 'fault_type' => SopPipe::CORRECT, 'mode' => 'semantic', 'hidden_premise' => '…' }
+    stage2 = { 'premises' => [['imp', 'A', 'B'], 'A'], 'conclusion' => 'B',
+               'claimed' => 'entailed', 'suspects' => [] }
+    j = SopPipe.judge(stage1, stage2, SopPipe::CORRECT)
+    assert j.pass, "正确推理自报 semantic 只注视不计红：#{(j.diag || '')}"
+    refute j.meta_ok
+  end
+
+  def test_mechanical_or_mode_missing_never_triggers_meta
+    [{}, { 'mode' => 'mechanical' }, { 'mode' => 'hybrid' }].each do |extra|
+      stage1 = { 'fault_type' => '三段论滥用', 'hidden_premise' => '…' }.merge(extra)
+      stage2 = { 'premises' => ['B'], 'conclusion' => 'A',
+                 'claimed' => 'not_entailed', 'suspects' => ['A'] }
+      j = SopPipe.judge(stage1, stage2, '三段论滥用')
+      assert j.pass, "mode=#{extra.inspect} 不应触发元锁：#{(j.diag || '')}"
+      assert j.meta_ok
+    end
+  end
+
+  def test_exempt_semantic_allows_semantic_mode
+    # 一词多义/相对时间等语义豁免类报 semantic = 正确的尺度自报，天然放行
+    ['一词多义', '相对时间误用', '组块歧义'].each do |f|
+      stage1 = { 'fault_type' => f, 'mode' => 'semantic', 'hidden_premise' => '…' }
+      j = SopPipe.judge(stage1, nil, f)
+      assert j.pass, "豁免类报 semantic 应放行（#{f}）：#{(j.diag || '')}"
+      assert j.meta_ok
+    end
+  end
 end

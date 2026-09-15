@@ -37,7 +37,22 @@ module SopPipe
     m.freeze
   end
 
-  Judge = Struct.new(:pass, :fault_hit, :verify_hit, :claimed_aligned, :exempt, :isolated, :diag, keyword_init: true)
+  Judge = Struct.new(:pass, :fault_hit, :verify_hit, :claimed_aligned, :exempt, :isolated, :meta_ok, :diag, keyword_init: true)
+
+  # 升降维自洽锁（SOP-NL-03·第5锁·元层注视）：解剖层自报思考尺度 mode ∈
+  #   mechanical（可降维验证）/ semantic（语义真空升维判明）/ hybrid（混合）。
+  # 模式：**注视不计红**——豁免门由 fault_type 白名单把守（EXPECTED[nil]=豁免机验），mode 不参与
+  # 豁免判定，因此"报 semantic 逃机验"在结构上无实益、无威胁窗口；agent 把谚语/幸存者这类
+  # "含语义成分的可验证类"天真自报为 semantic 是诚实误报，斩它=惩罚诚实（真机 Y2026-09-15 实测
+  # harvest/coffee 机验自报全绿仅死在元锁，净误杀）。第5锁退化为 diag 里的背离注视——
+  # mode 失衡作为研究 signal 保留，不执法。反例记录：harvest 谚语类报 mechanical 时语义算子
+  # "谚语"不得进 imp 前提（这是降维纪律在 STAGE2_PROMPT 的执法点，不是 STAGE1 的 mode）。
+  def self.meta_ok?(fault, stage1)
+    mode = stage1.is_a?(Hash) ? stage1['mode'].to_s : ''
+    return true if mode != 'semantic'
+
+    EXPECTED[fault.to_s] != :not_entailed && EXPECTED[fault.to_s] != :entailed
+  end
 
   # fault_type 字段可含逗号/顿号/斜杠分隔的多标签；解析出白名单内 actual 与名单外 oob。
   # oob 一旦非空即解剖锁必红（零容忍自创词）。
@@ -103,14 +118,15 @@ module SopPipe
     end
 
     pass = fault_hit && verify_ok && claimed_ok && isolated
+    meta_ok = meta_ok?(fault, stage1)
     Judge.new(
       pass: pass, fault_hit: fault_hit, verify_hit: verify_ok, claimed_aligned: claimed_ok,
-      exempt: exempt, isolated: isolated,
-      diag: diag_of(fault_hit, verify_ok, claimed_ok, exempt, isolated, stage1, stage2, expected)
+      exempt: exempt, isolated: isolated, meta_ok: meta_ok,
+      diag: diag_of(fault_hit, verify_ok, claimed_ok, exempt, isolated, meta_ok, stage1, stage2, expected)
     )
   end
 
-  def self.diag_of(fault_hit, verify_ok, claimed_ok, exempt, isolated, stage1, stage2, expected)
+  def self.diag_of(fault_hit, verify_ok, claimed_ok, exempt, isolated, meta_ok, stage1, stage2, expected)
     parts = []
     parsed = parse_tags(stage1)
     if stage1
@@ -139,6 +155,9 @@ module SopPipe
       end
     else
       parts << 'EXEMPT：语义类仅斩解剖锁'
+    end
+    unless meta_ok
+      parts << "⚠ mode=semantic 与可验证类不符（注视不计红：豁免门由 fault 白名单把守，自报逃逸无实益）"
     end
     parts.join('；')
   end

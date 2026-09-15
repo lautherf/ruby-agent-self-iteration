@@ -83,7 +83,11 @@ STAGE1_PROMPT = <<~PROMPT.freeze
     · 概念指东却被叫西（"指南针指北"）→ 名实错位
     · "更早发货"叠在固定运输时长上制造悖论 → 相对时间误用
     · 其余从枚举 #{SopPipe::FAULT_TYPES.join(' / ')} 中按文意选
-  STEP4 输出严格 JSON：{"fault_type":"…[, …]","hidden_premise":"…","reason":"…"}；
+  STEP4 输出严格 JSON：{"fault_type":"…[, …]","mode":"…","hidden_premise":"…","reason":"…"}；
+  STEP4.5 mode=本句的思考尺度（升降维自报，跨层转换的自变量）：
+    "mechanical"=语义可在布尔层还原、应降维交给机器枚举验证（三段论/量词/因果/组成占比/谚语/幸存者）；
+    "semantic"=语义真空、降维即失真（一词多义/相对时间/定义循环/组块/互补分割/名实——命题层表达不了义项/参照系/循环自证）；
+    "hybrid"=主体语义但含可验证片段。
   STEP5 自检后把最贴切的判别句例写入 reason 末尾。
   论断：「{{TEXT}}」
   ⚠ 用 Action=Final Answer 提交，Action Input 填 JSON。
@@ -196,7 +200,7 @@ s2 = if t[:exempt]
     puts "  #{verdict}  #{t[:name]} [#{t[:fault]}]"
     puts "    └ 解剖=#{s1.is_a?(Hash) ? s1['fault_type'] : '∅'}(标答 #{t[:fault]})；#{j_diag}"
     next({ name: t[:name], fault: t[:fault], exempt: false, verdict: verdict,
-           s1: s1 && { fault_type: s1['fault_type'], hidden_premise: s1['hidden_premise'], reason: s1['reason'] },
+           s1: s1 && { fault_type: s1['fault_type'], mode: s1['mode'], hidden_premise: s1['hidden_premise'], reason: s1['reason'] },
            s2: nil, diag: j_diag })
   end
 
@@ -205,7 +209,7 @@ s2 = if t[:exempt]
   puts "  #{verdict}  #{t[:name]} [#{t[:fault]}#{t[:exempt] ? '·EXEMPT' : ''}]"
   puts "    └ 解剖=#{s1.is_a?(Hash) ? s1['fault_type'] : '∅'}(标答 #{t[:fault]})；#{j.diag}"
   { name: t[:name], fault: t[:fault], exempt: !!t[:exempt], verdict: verdict,
-    s1: s1 && { fault_type: s1['fault_type'], hidden_premise: s1['hidden_premise'], reason: s1['reason'] },
+    s1: s1 && { fault_type: s1['fault_type'], mode: s1['mode'], hidden_premise: s1['hidden_premise'], reason: s1['reason'] },
     s2: s2, diag: j.diag }
 end
 

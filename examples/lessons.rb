@@ -98,3 +98,8 @@ end
 # @doc grade: sop
 def lesson_019
 end
+# @doc note: SOP-NL-03《分层升降维裁决》真机落地（Y2026-09-15）：把"升维求清晰、降维求验证"落成显式尺度决策——STAGE1 解剖层自报思考尺度 mode（mechanical=布尔可还原降维验证/semantic=语义真空升维判明/hybrid），STAGE2 以紧凑降维纪律执行（谚语律不进 imp、因果共现句结论只写果侧变量前提禁果侧），判分器新设第5锁"升降维自洽（元层）"注视 mode 背离。真机实测三次关键迭代：① 先尝试把 semantics/translate 长字段（升维语义算子清单+跨层转换记录）塞进 STAGE2 输出——prompt 拉长导致翻译全面劣化（harvest/coffee 又写成 imp、survivor 自报撒谎、2 个 EXEMPT 解剖错标）**14/20 倒退**，复证 lesson_011"提示词越长模型越崩"的检索扇区损失定律；② 回退 STAGE2 至紧凑纪律版 + 第5锁执法 mode=semantic 即可验证类 → **17/20**，但 harvest/coffee 机器层与自报全绿仅死在元锁——实证元锁执法=净误杀：豁免门由 fault 白名单把守（EXPECTED nil），mode 不参与豁免判定，报 semantic 逃机验在结构上无实益，agent 把谚语/幸存者这类"含语义成分的可验证类"天真自报 semantic 是诚实误报；③ 第5锁退化为**注视不计红**（pass 不含 meta_ok，diag 记背离注记，meta_ok 字段仍暴露信号）→ **19/20 (95%) 历史新高**。教训：让 LLM 显式输出"分层长结构"（semantics 算子清单/translate 转换记录）会让 JSON 输出变脆；分层的正确落点是**尺度自报（words 级）+ 降维纪律压成规则（prompt 短句）**，跨层转换的审计交给判定器而非期望模型自发写长记录。剩余唯一 FAIL=early-ponens 正确推理被解剖挑刺（"就能"被当因果/三段论），轮次间摇摆的噪声。
+# @doc tags: 分层升降维,SOP-NL-03,mode尺度,元层注视,提示词长度定律,19/20高分,判器审计跨层
+# @doc grade: sop
+def lesson_020
+end

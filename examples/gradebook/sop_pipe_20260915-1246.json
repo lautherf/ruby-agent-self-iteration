@@ -1,0 +1,528 @@
+{
+  "generated_at": "2026-09-15T12:46:23+08:00",
+  "model": "agnes-2.5-flash",
+  "total": 20,
+  "passed": 19,
+  "failed": 1,
+  "exempt": 6,
+  "rows": [
+    {
+      "name": "rain-affirm-consequent",
+      "fault": "三段论滥用",
+      "exempt": false,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "三段论滥用",
+        "mode": "mechanical",
+        "hidden_premise": "路滑仅由下雨导致（将充分条件偷换为必要条件，否定洒水/结冰/油污等其他致滑因素）",
+        "reason": "肯定后件谬误：有效式为「若P则Q且P，故Q」（Modus Ponens），本论断改为「若P则Q且Q，故P」，违反三段论规则。反例：洒水车作业致路滑但无雨，小前提真而结论假。"
+      },
+      "s2": {
+        "vars": [
+          "R",
+          "S"
+        ],
+        "premises": [
+          [
+            "imp",
+            "R",
+            "S"
+          ],
+          "S"
+        ],
+        "conclusion": "R",
+        "claimed": "not_entailed",
+        "suspects": [
+          "S"
+        ]
+      },
+      "diag": "解剖标签 [\"三段论滥用\"]；机器推演=not_entailed（期望 not_entailed）；自报=\"not_entailed\""
+    },
+    {
+      "name": "candy-cure-single-cause",
+      "fault": "因果混淆",
+      "exempt": false,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "因果混淆",
+        "mode": "mechanical",
+        "hidden_premise": "时间先后关系即意味着因果关系，且忽略其他混杂因素",
+        "reason": "论断将'吃糖'与'病好'的时间先后序列直接推导为因果关系，隐含排除了自愈、安慰剂效应、病程自然转归、同时服用其他药物等替代解释。对照判别句例：'鸡叫之后太阳升起，所以鸡叫唤醒了太阳'——同样把时序关系当作因果机制，属典型post hoc ergo propter hoc谬误。"
+      },
+      "s2": {
+        "vars": [
+          "A",
+          "B"
+        ],
+        "premises": [
+          "A"
+        ],
+        "conclusion": "B",
+        "claimed": "not_entailed",
+        "suspects": [
+          "A"
+        ]
+      },
+      "diag": "解剖标签 [\"因果混淆\"]；机器推演=not_entailed（期望 not_entailed）；自报=\"not_entailed\""
+    },
+    {
+      "name": "oxygen-composition-probability",
+      "fault": "概率与组成混淆",
+      "exempt": false,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "概率与组成混淆, 三段论滥用",
+        "mode": "mechanical",
+        "hidden_premise": "将空气的组成占比（体积分数）等同于每次呼吸随机抽取的分子中不含足够氧气的事件概率，并把肺部气体交换视为独立伯努利试验；同时隐含了'抽到氮分子=憋死'的二值因果假设，忽略了肺泡通气量、气体分压平衡、血红蛋白携氧等生理机制。",
+        "reason": "组成占比与事件概率不属于同一量纲：氧气占空气20%描述的是静态混合物的体积分数，而'每次呼吸憋死'描述的是一个涉及肺泡通气动力学和气体交换过程的随机事件概率。将前者直接当作后者使用，如同'骰子六个面中一个是一点，所以连掷十次至少出现一次一点的概率等于60%'——前者是构成比例，后者需要概率乘法法则。类似经典错例：'水里氢原子数占2/3，所以随机取一个水分子，它含有氢原子的概率是2/3'——实则为100%，因为每个水分子都含两个氢原子；此处同样：每口空气都含有氧气，不存在'不含氧气的口'这一事件类别。"
+      },
+      "s2": {
+        "vars": [
+          "A",
+          "B"
+        ],
+        "premises": [
+          "A"
+        ],
+        "conclusion": "B",
+        "claimed": "not_entailed",
+        "suspects": [
+          "A"
+        ]
+      },
+      "diag": "解剖标签 [\"概率与组成混淆\", \"三段论滥用\"]；机器推演=not_entailed（期望 not_entailed）；自报=\"not_entailed\""
+    },
+    {
+      "name": "early-ponens",
+      "fault": "正确推理",
+      "exempt": false,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "正确推理",
+        "mode": "mechanical",
+        "hidden_premise": "若起得早则能多干一件事（P→Q）；今天他起得早（P）；因此他多干了一件事（Q）——结构等价于假言推理 Modus Ponens，形式有效。",
+        "reason": "前提1为条件句「起得早→能干更多」，前提2肯定前件「他起得早」，结论断言后件「他多干了一件事」，符合有效式：若P则Q，P，故Q——典型Modus Ponens正确推理，无需追究「能」到「就」的模态转换，因字面三段已逐次成立。"
+      },
+      "s2": {
+        "vars": [
+          "A",
+          "B"
+        ],
+        "premises": [
+          [
+            "imp",
+            "A",
+            "B"
+          ],
+          "A"
+        ],
+        "conclusion": "B",
+        "claimed": "entailed",
+        "suspects": [
+
+        ]
+      },
+      "diag": "解剖标签 [\"正确推理\"]；机器推演=entailed（期望 entailed）；自报=\"entailed\""
+    },
+    {
+      "name": "all-men-swap",
+      "fault": "量词误用",
+      "exempt": false,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "量词误用",
+        "mode": "mechanical",
+        "hidden_premise": "错误假设全称肯定命题可换位，把'所有M包含于D'当作'所有D包含于M'，实质将谓词论域颠倒",
+        "reason": "前提'所有男人会死'仅断定男人类包含于会死类，结论却把会死类倒置为包含于男人类，违反换位律。例：'所有狗是哺乳动物'真，但'所有哺乳动物是狗'假。"
+      },
+      "s2": {
+        "vars": [
+          "A",
+          "B"
+        ],
+        "premises": [
+          "A"
+        ],
+        "conclusion": "B",
+        "claimed": "not_entailed",
+        "suspects": [
+          "A",
+          "B"
+        ]
+      },
+      "diag": "解剖标签 [\"量词误用\"]；机器推演=not_entailed（期望 not_entailed）；自报=\"not_entailed\""
+    },
+    {
+      "name": "socratic-mortal",
+      "fault": "正确推理",
+      "exempt": false,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "正确推理",
+        "mode": "mechanical",
+        "hidden_premise": "无（论证形式完整有效，无需补充隐含前提）",
+        "reason": "此为经典三段论Barbara式（AAA-1），大前提全称肯定「所有人→会死」，小前提单称肯定「苏格拉底∈人」，结论单称肯定「苏格拉底→会死」，逐字按有效式直接成立，演绎必然性无漏洞。判别句例：「若所有人都会死，且苏格拉底是人，则苏格拉底会死。"
+      },
+      "s2": {
+        "vars": [
+          "H",
+          "D"
+        ],
+        "premises": [
+          [
+            "imp",
+            "H",
+            "D"
+          ],
+          "H"
+        ],
+        "conclusion": "D",
+        "claimed": "entailed",
+        "suspects": [
+
+        ]
+      },
+      "diag": "解剖标签 [\"正确推理\"]；机器推演=entailed（期望 entailed）；自报=\"entailed\""
+    },
+    {
+      "name": "survivor-bias",
+      "fault": "幸存者偏差",
+      "exempt": false,
+      "verdict": "FAIL",
+      "s1": {
+        "fault_type": "幸存者偏差, 概率与组成混淆",
+        "mode": "hybrid",
+        "hidden_premise": "返航战斗机（幸存者样本）的弹孔分布被当作全总体损伤分布来指导装甲分配，忽略了致命部位（机身、引擎等）的飞机根本没有返航，因此样本中弹孔稀少恰恰意味着那些部位更脆弱——装甲应装在弹孔少的地方而非多的地方。",
+        "reason": "论断将『返航机机翼弹孔最多』等同于『机翼最容易受损且最需要保护』，却忽视了样本选择偏差：没返航的飞机恰恰是因关键部位中弹而坠毁，这部分数据完全缺失。这是亚伯拉罕·沃尔德（Abraham Wald）于1940年代提出的经典幸存者偏差反直觉结论。最贴切句例：「活到90的人都喝咖啡 → 喝咖啡能长寿」——同样只看存活样本、忽略死亡样本的系统性错误。"
+      },
+      "s2": {
+        "vars": [
+          "A",
+          "B",
+          "C"
+        ],
+        "premises": [
+          [
+            "and",
+            [
+              "and",
+              "A",
+              "B"
+            ],
+            "C"
+          ]
+        ],
+        "conclusion": "C",
+        "claimed": "entailed",
+        "suspects": [
+
+        ]
+      },
+      "diag": "解剖标签 [\"幸存者偏差\", \"概率与组成混淆\"]；机器推演=entailed（期望 not_entailed） ← 不符；自报=\"entailed\"；隔离锁红：受审槽零自报（藏被告不发审）"
+    },
+    {
+      "name": "failure-proverb",
+      "fault": "谚语全称滥用",
+      "exempt": false,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "谚语全称滥用, 概率与组成混淆",
+        "mode": "semantic",
+        "hidden_premise": "把谚语「失败是成功之母」当作全称必然规律：误认为（1）失败次数与成功概率成单调正比，（2）失败本身自动蕴含成功结果，无需额外条件（方法改进、方向正确等）；并将群体统计规律（成功者回顾时多经历过失败）降格为单次个体事件因果。",
+        "reason": "「失败是成功之母」是统计性经验观察，不能推出「失败很多→必然成功」。等价形式：「活到90的人都喝咖啡，老王喝了无数杯咖啡，所以他一定活到90」。"
+      },
+      "s2": {
+        "vars": [
+          "B",
+          "P",
+          "S"
+        ],
+        "premises": [
+          [
+            "and",
+            "P",
+            "B"
+          ],
+          "P"
+        ],
+        "conclusion": "S",
+        "claimed": "not_entailed",
+        "suspects": [
+          "B",
+          "P"
+        ]
+      },
+      "diag": "解剖标签 [\"谚语全称滥用\", \"概率与组成混淆\"]；机器推演=not_entailed（期望 not_entailed）；自报=\"not_entailed\"；⚠ mode=semantic 与可验证类不符（注视不计红：豁免门由 fault 白名单把守，自报逃逸无实益）"
+    },
+    {
+      "name": "delivery-3days",
+      "fault": "相对时间误用",
+      "exempt": true,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "相对时间误用, 一词多义",
+        "mode": "semantic",
+        "hidden_premise": "论断将'3天'这一运输持续时长偷换为可线性偏移的发货时间基准，隐含假设到达时刻=发货时刻+固定时长，且'提前3天发'相对于当前基准能产生同样的提前量；忽视了'3天'在前提中是duration（运输持续期）而在结论中却被当作timestamp偏移量，参照系发生了静默切换。",
+        "reason": "核心谬误：同一表达式'3天'在前提中是运输所需时长（duration），在结论的'提前3天'中却变成了一个相对于'现在'的时间偏移量（offset），参照系切换未被声明。若'提前3天发'是相对于'今天发'而言，那只是把发货时间从明天挪到今天，总到达时间并未改变——前提承诺的'3天到'本身并未被突破。这与'我们等公交车要20分钟，所以我们应该每天都提前20分钟出门'同构：出发时间提前了，但公交车仍按原时刻表到达，你只会更早到站而不是更早到达目的地。"
+      },
+      "s2": null,
+      "diag": "解剖标签 [\"相对时间误用\", \"一词多义\"]；EXEMPT：语义类仅斩解剖锁"
+    },
+    {
+      "name": "snow-white-dwarfs",
+      "fault": "一词多义",
+      "exempt": true,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "一词多义",
+        "mode": "semantic",
+        "hidden_premise": "「小人」在汉语中同时指「身材矮小的人」和「品德卑劣的人」；论断指称的是白雪公主故事中帮助她的矮人朋友（义项1），却借「品德卑劣者带来厄运」的常识来归因（义项2），在两个义项间偷偷切换，制造虚假因果。",
+        "reason": "偷换「小人」义项：用矮人（义项1）指对象，借奸邪小人（义项2）推结论。同类句例：「他个子矮，所以没本事。」"
+      },
+      "s2": null,
+      "diag": "解剖标签 [\"一词多义\"]；EXEMPT：语义类仅斩解剖锁"
+    },
+    {
+      "name": "neg-antecedent",
+      "fault": "三段论滥用",
+      "exempt": false,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "三段论滥用",
+        "mode": "mechanical",
+        "hidden_premise": "'下雨→路滑'仅建立充分条件关系，论断暗中假定了'只有下雨路才滑'（即把充分条件偷换为必要条件），但原文并未给出此前提",
+        "reason": "该论证形式为 P→Q, ¬P, ∴ ¬Q，否定前件即得否定后件，是三段论滥用的一种变体（与肯定后件谬误同属充分条件误作必要条件的错推）。反例：洒水车作业时没下雨但路滑，直接证伪结论。"
+      },
+      "s2": {
+        "vars": [
+          "R",
+          "S"
+        ],
+        "premises": [
+          [
+            "imp",
+            "R",
+            "S"
+          ],
+          [
+            "not",
+            "R"
+          ]
+        ],
+        "conclusion": [
+          "not",
+          "S"
+        ],
+        "claimed": "not_entailed",
+        "suspects": [
+          "R"
+        ]
+      },
+      "diag": "解剖标签 [\"三段论滥用\"]；机器推演=not_entailed（期望 not_entailed）；自报=\"not_entailed\""
+    },
+    {
+      "name": "icecream-drowning",
+      "fault": "因果混淆",
+      "exempt": false,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "因果混淆",
+        "mode": "mechanical",
+        "hidden_premise": "两个事件在统计数据中呈现正相关，即其中一个导致另一个（或将群体层面的共变关系直接套用于个体因果推断）",
+        "reason": "冰激凌销量与溺水人数均由第三变量'夏季高温'共同驱动（共因关系），而非彼此因果。将月度聚合数据的统计相关性跳跃为个体层面的因果断言，遗漏了混淆变量。→判例：'夏天冰淇淋销量高、溺水事故也多，所以冰淇淋导致溺水'（同一谬误的经典表述）"
+      },
+      "s2": {
+        "vars": [
+          "A",
+          "B"
+        ],
+        "premises": [
+          "A"
+        ],
+        "conclusion": "B",
+        "claimed": "not_entailed",
+        "suspects": [
+          "A"
+        ]
+      },
+      "diag": "解剖标签 [\"因果混淆\"]；机器推演=not_entailed（期望 not_entailed）；自报=\"not_entailed\""
+    },
+    {
+      "name": "coach-men-quant",
+      "fault": "量词误用",
+      "exempt": false,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "量词误用",
+        "mode": "mechanical",
+        "hidden_premise": "'所有S是P'与'所有P是S'等价",
+        "reason": "前提'国家队教练都是男人'（S⊆M）被非法换位为'所有男人都能当国家队教练'（M⊆S），量词方向颠倒，犯了换位谬误。判别句：将'所有S是P'直接换位为'所有P是S'，量词方向颠倒，导致集合关系从子集变为超集的非法推断。"
+      },
+      "s2": {
+        "vars": [
+          "A",
+          "B"
+        ],
+        "premises": [
+          [
+            "imp",
+            "A",
+            "B"
+          ]
+        ],
+        "conclusion": [
+          "imp",
+          "B",
+          "A"
+        ],
+        "claimed": "not_entailed",
+        "suspects": [
+          "B"
+        ]
+      },
+      "diag": "解剖标签 [\"量词误用\"]；机器推演=not_entailed（期望 not_entailed）；自报=\"not_entailed\""
+    },
+    {
+      "name": "coffee-longevity",
+      "fault": "幸存者偏差",
+      "exempt": false,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "幸存者偏差,因果混淆,概率与组成混淆",
+        "mode": "mechanical",
+        "hidden_premise": "健康长寿的人恰好也喝咖啡，且排除了其他长寿影响因素（基因、环境、饮食等）；同时假设样本中所有活到90岁的人都因喝咖啡而长寿，忽略了反向因果或共同原因的可能。",
+        "reason": "该论证从「活到90岁的人中有喝咖啡习惯」推出「喝咖啡导致长寿」，犯了以存活者为唯一样本的幸存者偏差：只看活下来的人喝咖啡，却无视『喝咖啡但早逝的人』和『不喝咖啡也活到90岁的人』这两个对照群体。同时，相关不等于因果，长寿者喝咖啡可能与其它变量（如社会经济地位、教育水平）相关，而非咖啡本身。判别句例：「活到90岁的老人都抽烟，所以抽烟能长寿」——同构的幸存者偏差错误结构，可通过枚举反例机械验证。"
+      },
+      "s2": {
+        "vars": [
+          "A",
+          "B"
+        ],
+        "premises": [
+          "B"
+        ],
+        "conclusion": "A",
+        "claimed": "not_entailed",
+        "suspects": [
+          "A"
+        ]
+      },
+      "diag": "解剖标签 [\"幸存者偏差\", \"因果混淆\", \"概率与组成混淆\"]；机器推演=not_entailed（期望 not_entailed）；自报=\"not_entailed\""
+    },
+    {
+      "name": "harvest-proverb",
+      "fault": "谚语全称滥用",
+      "exempt": false,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "谚语全称滥用, 三段论滥用",
+        "mode": "mechanical",
+        "hidden_premise": "①『一分耕耘一分收获』被当作全称必然规律（耕耘→收获 恒成立），而非统计趋势或概率性描述；②忽略了外部变量（方法错误、环境不可抗力等）可导致耕耘而无收获；③'一定'将概率性断言升级为必然断言，等价于将大前提改写为 '所有耕耘之人必收获'。",
+        "reason": "论断以谚语'一分耕耘一分收获'为大前提，此谚语本身是对经验趋势的概括（耕耘通常伴随收获），却被偷换为全称必然命题（耕耘→收获 对所有个案成立）。小前提肯定前件后，结论却得出'一定收获'——表面上符合肯定前件式(valid)，但大前提的真实含义已被篡改。验证判据句：'春蚕到死丝方尽，它吐了丝，所以它一定完成了使命'——同样将经验性趋势断言当作必然规律使用，犯了相同的谚语全称滥用。"
+      },
+      "s2": {
+        "vars": [
+          "G",
+          "H"
+        ],
+        "premises": [
+          "G"
+        ],
+        "conclusion": "H",
+        "claimed": "not_entailed",
+        "suspects": [
+          "G"
+        ]
+      },
+      "diag": "解剖标签 [\"谚语全称滥用\", \"三段论滥用\"]；机器推演=not_entailed（期望 not_entailed）；自报=\"not_entailed\""
+    },
+    {
+      "name": "register-necessary",
+      "fault": "正确推理",
+      "exempt": false,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "正确推理",
+        "mode": "mechanical",
+        "hidden_premise": "「只有登记的人才能进入」逻辑上等价于「能进入→登记过」（进入的必要条件是登记）。前提「她成功进去了」肯定了条件句的前件，通过Modus Ponens有效推出「她登记过」。论证结构完整有效，无逻辑缺陷。",
+        "reason": "「只有A才B」= B→A；B成立，故A成立，为有效的充分条件假言推理（Modus Ponens）。此论证逐字符合有效推理式。判别句例：「只有年满18岁才能投票，他投了票，所以他年满18岁了」→ 同为有效推理，非三段论滥用。"
+      },
+      "s2": {
+        "vars": [
+          "D",
+          "E"
+        ],
+        "premises": [
+          [
+            "imp",
+            "E",
+            "D"
+          ],
+          "E"
+        ],
+        "conclusion": "D",
+        "claimed": "entailed",
+        "suspects": [
+
+        ]
+      },
+      "diag": "解剖标签 [\"正确推理\"]；机器推演=entailed（期望 entailed）；自报=\"entailed\""
+    },
+    {
+      "name": "hour-and-half",
+      "fault": "组块歧义",
+      "exempt": true,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "组块歧义",
+        "mode": "hybrid",
+        "hidden_premise": "\"一个半小时\"存在两种合法切分：[一个半]·[小时]=1.5小时 vs [一个]·[半小时]=0.5小时，切分不同则答案不同（3个 vs 1个）。此歧义无法在纯布尔命题层表达，必须回到自然语言的结构切分才能还原。",
+        "reason": "将时间短语\"一个半小时\"按不同组块切分得出不同答案（1.5÷0.5=3 或 0.5÷0.5=1），符合分诊向导中\"一个时间单位有两种分法（如'一个半小时'）→ 组块歧义\"的判定标准。"
+      },
+      "s2": null,
+      "diag": "解剖标签 [\"组块歧义\"]；EXEMPT：语义类仅斩解剖锁"
+    },
+    {
+      "name": "ocean-70",
+      "fault": "互补分割误读",
+      "exempt": true,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "互补分割误读",
+        "mode": "mechanical",
+        "hidden_premise": "论断者将地球表面按海洋/陆地互补两半切分（70%+30%=100%已全部分配），却误解为'有一多半是海洋所以还有一小半海洋没被说明'，虚构出'剩下的30%海洋和70%陆地'作为追问对象，实质是对互补分割的语义误读。",
+        "reason": "全量按互补两半切分后另一半'消失'（70%+30%=100%已闭合，不存在'剩下的'份额）。判别句例：'苹果有红苹果和青苹果，那剩下的红苹果和青苹果去哪了？'"
+      },
+      "s2": null,
+      "diag": "解剖标签 [\"互补分割误读\"]；EXEMPT：语义类仅斩解剖锁"
+    },
+    {
+      "name": "why-longevity",
+      "fault": "定义循环",
+      "exempt": true,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "定义循环",
+        "mode": "semantic",
+        "hidden_premise": "长寿的人=活到老年的人（同义反复），因此'长寿的人都是老年人'是分析性命题而非经验性命题；同时隐含'碰巧'暗含偶然性，实则该命题为定义必然。",
+        "reason": "将定义性重言式包装为需要解释的经验现象——'长寿的人必然是老年人'由'长寿=活到老年'这一概念界定保证，并非统计相关或因果机制所致；同类判据：「为啥已婚的都是结了婚的？」"
+      },
+      "s2": null,
+      "diag": "解剖标签 [\"定义循环\"]；EXEMPT：语义类仅斩解剖锁"
+    },
+    {
+      "name": "compass-name",
+      "fault": "名实错位",
+      "exempt": true,
+      "verdict": "PASS",
+      "s1": {
+        "fault_type": "名实错位,一词多义",
+        "mode": "semantic",
+        "hidden_premise": "①名称应直白反映物理功能属性（指向哪方就叫什么针），忽视命名惯性和历史渊源；②将'指南'仅理解为'指向南方'的字面义，忽略其作为整体词汇的文化约定义——'指南'本义为'辨别方向'，非单指指向南方；③以现代物理指向（磁针北极）反推古名合理性，存在时代语境倒置。",
+        "reason": "论者将'指南针'之名逐字拆解为'指向南方之针'，但'指南'作为固定词汇实指'辨别方向'（《韩非子·有度》：'先王立司南以端朝夕'），名称承载的是功能类别而非物理描述，故出现'名为指南而实则指北'的名实错位感；'指南'一词兼具'指向南方'与'辨别方向'两义项，论者偷换义项产生困惑。判别句例：「指南针明明是'指北'的，为什么叫'指南'针？」同「望远镜明明不能望远，为什么叫'望远'镜？」（名实错位类），均将约定俗成之名按字面义苛责。"
+      },
+      "s2": null,
+      "diag": "解剖标签 [\"名实错位\", \"一词多义\"]；EXEMPT：语义类仅斩解剖锁"
+    }
+  ]
+}
