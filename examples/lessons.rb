@@ -108,3 +108,8 @@ end
 # @doc grade: sop
 def lesson_021
 end
+# @doc note: BBH·logical-deduction（3-objects）接入实验（Y2026-09-15，真机 6/6 100%）：把 SOP-NL-03 分层升降维搬到标准推理基准——LLM 升维语义层只做约束抽取（谓词白名单 left/right/between/adjacent/pos/not_pos/end），Ruby 降维层展开位置命题+全序公理，PropSolver 枚举唯一蕴含得解；gold 约束基线 6/6 隔离"题可机解"与"语义层保真"。三条实证收获：① **真空蕴含后门**——语义层漏报对象（题面点名 C 却只报 A/B）会让位置公理论证残缺→前提不可满足→空前提对一切候选蕴含，机器谎报多解/唯一解；求解前必须加一致性命门 PropSolver.consistent? 前置拦截，把"前提矛盾"从"解"里剥出来。② **位次编号归 harness 规格**——query_pos 对应 benchmark 官方答案字段，属于题面 meta 而非自然语言理解，让 LLM 猜"谁在位置几"的数值化环节不稳定且无意义；职责收敛：语义层只抽约束，位次由题面传入，分层边界按"该信息机器侧是否已有权威值"切。③ **述位化保真优先**——题目说"X 在最右端"必须述位化 pos(X,3)，禁止宽化成 end(X)（X 在两端），后者会放过 A=2,B=3,C=1 这类使 left+adjacent 仍真的反模型（end 只用于字面就写"在两端之一"的模糊句）；降维验证当场把语义层降保真抓成 ∅无解/多解 FAIL——这正是"升维语义层对降维机器负责"的可审计点。
+# @doc tags: BBH接入,逻辑推理基准,真空蕴含后门,一致性命门,述位化保真,分层边界
+# @doc grade: verified
+def lesson_022
+end
