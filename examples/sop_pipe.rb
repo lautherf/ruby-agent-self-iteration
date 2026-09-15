@@ -9,10 +9,11 @@ require 'time'
 # 管线（每问两个 fresh exam agent，谁也不许写库）：
 #   阶段1 解剖（SOP-NL-01）：五步法萃取 fault_type（12 枚举白名单）+ hidden_premise
 #   阶段2 机验（SOP-NL-02）：显式前提→命题 AST，PropSolver 真值枚举出具证明/反例
-#   评审台（SopPipe.judge）三锁齐拔才算 PASS：
+#   评审台（SopPipe.judge）四锁齐拔才算 PASS：
 #     ① 解剖锁  fault_type 命中白名单且=本卷标注
 #     ② 机验锁  机器推演 == 该 fault 的期望（谬误类必须 not_entailed，正确推理必须 entailed）
 #     ③ 自报锁  LLM 的 claimed 与机器推演一致
+#     ④ 隔离锁  受审槽（suspects）非空自报、且不得作为顶层完整前提走私进 premises
 #   语义豁免类（一词多义/相对时间等，布尔层还原失真）只斩解剖锁，成绩单标 EXEMPT。
 #
 # 价值：解剖标签第一次获得机器反例背书；反过来机器反例也第一次被解剖标签约束。
@@ -93,9 +94,12 @@ STAGE2_PROMPT = <<~PROMPT.freeze
   谚语/习语/倾向性因果不是必然律：除非句子明确陈述"只要X就一定Y"，否则不得写成 ["imp",X,Y] 形式的确定性前提；
   conclusion 直译"所以"右半句，不得与前提同义复制，不得改换因果含义；
   含"所有人/所有X"时把全称实例化到句中的个体（"所有人会死，苏格拉底是人"→前提 [["imp","S","D"],"S"]、结论 "D"）。
+  suspects（受审槽）：列出承载谬误结构的核心变量——因果混淆的"因"、量词互换的被换项、谚语的必然项等；
+  受审槽是"正在被审查"的槽，只能出现在 conclusion 或复合前提的内部，禁止单独成格作为顶层前提；
+  断言逐字按有效式成立（"#{SopPipe::CORRECT}"）时无受审槽，suspects 填 []。
   AST 语法：每层必须是数组（形式 ["连接词",子公式,...]）或单个大写字母变量；不得把连接词写在对象键里。
   claimed 先自检：前提组合下是否存在"前提全真结论假"的指派——不存在才写 entailed。
-  输出纯 JSON：{"vars":["A","B"],"premises":[["imp","A","B"],"B"],"conclusion":"A","claimed":"not_entailed"}。
+  输出纯 JSON：{"vars":["A","B"],"premises":[["imp","A","B"],"B"],"conclusion":"A","claimed":"not_entailed","suspects":["A"]}。
   claimed 只能是 entailed 或 not_entailed。论断：「{{TEXT}}」
   ⚠ 用 Action=Final Answer 提交，Action Input 填 JSON。
 PROMPT
@@ -186,7 +190,7 @@ exempt = rows.count { |r| r[:exempt] }
 puts
 puts '════════ 解剖×机验互锁（SOP-NL-01∘N02） ════════'
 puts "  PASS #{passed} / FAIL #{failed}（共 #{rows.size}；其中语义豁免 EXEMPT #{exempt} 题仅斩解剖锁）"
-puts '  三锁=白名单命中 ∧ 机器推演命中期望 ∧ 自报与机器一致——解剖与机验互相背书'
+puts '  四锁=白名单命中 ∧ 机器推演命中期望 ∧ 自报与机器一致 ∧ 受审槽隔离——解剖与机验互相背书'
 
 Dir.mkdir(File.join(ROOT, 'examples', 'gradebook')) unless File.directory?(File.join(ROOT, 'examples', 'gradebook'))
 artifact = File.join(ROOT, 'examples', 'gradebook', "sop_pipe_#{Time.now.strftime('%Y%m%d-%H%M')}.json")

@@ -3,7 +3,7 @@
 require_relative 'spec_helper'
 require_relative '../lib/ruby_agent/sop_pipe'
 
-# 解剖×机验互锁判分器规范 —— 三锁裁决不掺水。
+# 解剖×机验互锁判分器规范 —— 四锁裁决不掺水。
 class SopPipeSpec < Minitest::Test
   def test_expect_dict_maps_faults_to_machine_verdicts
     assert_equal :not_entailed, SopPipe::EXPECTED['因果混淆']
@@ -125,7 +125,8 @@ class SopPipeSpec < Minitest::Test
   # 正确推理类本来就该 entailed，无受审槽可言，不斩。语义豁免类已豁免，不斩。
 
   def test_translation_cheat_isolated_by_suspect_lock
-    # 受审槽 I（"冰激凌销量高")混进 premises → 机器 entailed，三锁齐绿 → 隔离锁仍斩
+    # 受审槽 I（"冰激凌销量高")被写成确定性 imp 前提摆上合法前提台 → 隔离锁照斩；
+    # 机验锁此时也会因 entailed ≠ 期望 not_entailed 跟着红——双锁合璧，翻译作弊无处可躲
     stage1 = { 'fault_type' => '因果混淆', 'hidden_premise' => '…', 'reason' => '…' }
     stage2 = { 'premises' => [["imp", "I", "D"], "I"], 'conclusion' => "D",
                'claimed' => 'entailed', 'suspects' => ["I"] }
