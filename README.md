@@ -26,11 +26,19 @@ rake ruby_agent:test:verbose
 > 环境：Ruby 3.3+，测试框架 **minitest**（随 Ruby 标准发行版提供）。
 > `Gemfile` 中的 `zeitwerk` 仅用于插件自动加载，属**可选依赖**——缺失时核心三层仍可独立运行、测试照常通过。
 
-## 当前状态（2026-09-11）
+## 当前状态（2026-09-15）
 
-Sprint 7 交付完成（**记忆=结构化数据**）：记忆是纯结构化数据文件（YAML），Ruby 代码只负责"本体论（Memory::SCHEMA: kinds/fields/必填项）+ 契约校验 + 原子落盘"，不再把内容伪装成方法体。自动沉淀 + remember 显式记忆 + read_memory 召回（空格分词） + 每轮折叠成经验。引擎层兼容真模型"一条回复塞多个 Action"的毛病（全部按序执行再认 Final）。**17 个 spec / 151 runs / 472 assertions 全绿**，真模型跨会话记忆实测通过。
-（成功标准 1–6 全部闭环；代码改坏了自动回滚；ra 身份契约自明；记忆可编译可遗忘）：
-> 基线：Sprint 5 终点 100 runs / 264 assertions → sprint6 119 → 真实模型适配 126 → 内化四则 130 → 记忆 145 runs。
+Sprint 10 主线：**解剖×机验互锁（SopPipe）四锁判分**进入评级体系并持续收口。
+学习期（对话教学数学→逻辑→大学）打底 46 方法，考核期（黄金回归 46 方法冻结 / 属性测试 / 转移测验 / 消融分账）之后，
+SOP 管线把自然语言隐藏前提解剖（SOP-NL-01）与命题逻辑机器验证（SOP-NL-02）串成一条互相背书的工序：
+
+- **SopPipe 四锁齐拔才 PASS**：① 解剖锁（fault_type 多标签交集判缺 + 白名单外零容忍）② 机验锁（PropSolver 真值枚举，谬误类必 not_entailed、正确推理必 entailed）③ 自报锁（LLM claimed 与机器一致）④ 隔离锁（受审槽 suspects 自报、不得作为顶层完整前提走私上合法前提台——封堵"翻译作弊"）。
+- 真机 20 题卷通过率 **70%（14/20）**；语义豁免类（一词多义/相对时间等布尔层还原失真）只斩解剖锁并标 EXEMPT。
+- 记忆层（Sprint 7）已内置：**记忆=结构化数据**（YAML + 本体论 SCHEMA + recall 分词 + 自动折叠），真机跨会话记忆实测通过。
+- 经验舱分账：A 舱 43 个可验证能力（46 方法绑定 @doc 契约），B 舱 17 条 lessons（verified 9 / sop 6 / note 2），`audit_knowledge --ci` 保证未分级即红。
+- **23 spec 文件全绿 / 0 fail / 0 err**。
+
+> 基线：Sprint 7 终点 17 spec / 151 runs → SOP 机验 217/1415 → 解剖×机验 228/1448 → 扩量 231/1454 → 隔离锁落锁后逐文件 0 fail 全绿。
 
 | 层 | 文件 | 职责 |
 |----|------|------|
@@ -45,6 +53,8 @@ Sprint 7 交付完成（**记忆=结构化数据**）：记忆是纯结构化数
 | 记忆层 | `lib/ruby_agent/memory.rb` | **记忆=结构化数据**：本体论 SCHEMA（kinds/field/校验）+ YAML 存取 + `recall`（分词）+ `consolidate!`（自动沉淀/显式记忆/折叠遗忘） |
 | 闭环层 | `lib/ruby_agent/iteration.rb` | `IterationLoop`：多轮执行 → reflect 沉淀 → 下轮注入（含记忆折叠） |
 | 代码层 | `lib/ruby_agent/code_editor.rb` | 代码级编辑：单方法替换 / 试编译 / 原子落盘 / 快照栈回滚 / 作用域隔离 |
+| 验证器 | `lib/ruby_agent/prop_solver.rb` | **命题逻辑判定器**（SOP-NL-02 机器核心）：vars 收集 / AST 求值 / 2^n 全枚举 / verify（⊨）/ countermodels / 一致性——LLM 只翻译，证明反例全由机器出具 |
+| 评审台 | `lib/ruby_agent/sop_pipe.rb` | **SopPipe 四锁判分**：fault→机器期望映射表 / 多标签交集判缺 / EXEMPT 豁免 / 隔离锁（翻译作弊零容忍）/ diag 归因 |
 
 其中 `spec/regression_gaps_spec.rb` 用三条回归测试固化了参考 Demo 暴露的三个缺口——
 任何一次回退都会立刻变红。缺口的成因与证据见 [doc-demo-review.md](./docs/doc-demo-review.md)。
@@ -71,7 +81,15 @@ ruby-agent-self-iteration/
 │   ├── ask_ra.rb                 # 真实模型问 ra：你是谁（身份契约自明）
 │   ├── internalize_math.rb       # 真实模型让 ra 把小学数学内化进自己
 │   ├── memory_demo.rb            # 离线演示记忆层：YAML 结构化数据 + recall + 折叠
-│   └── test_memory.rb            # 真模型跨会话记忆测试：A 会话记住，B 会话 read_memory 回忆
+│   ├── test_memory.rb            # 真模型跨会话记忆测试：A 会话记住，B 会话 read_memory 回忆
+│   ├── sop_pipe.rb               # 解剖×机验互锁 20 题同卷合考（SopPipe 四锁自动判分 + 存档）
+│   ├── sop_analyze.rb            # SOP-NL-01 解剖单句：携带新句子直接套用 / --selftest
+│   ├── sop_verify.rb             # SOP-NL-02 机验 harness（4 题真机，机器反例背书）
+│   ├── transfer_test.rb          # 转移测验：新题面三态判分，证明不是背题
+│   ├── ablation.rb               # 消融对照：裸LLM/−方法库/−lessons/−全量 净增量分账
+│   ├── quiz_ruozhiba.rb          # 弱智吧经典逻辑解剖考（8/8 开启 SOP-NL-01）
+│   ├── audit_knowledge.rb        # 能力/经验分舱报告 --ci（未分级即退出码 1）
+│   └── lessons.rb                # 经验沉淀区（17 条 lessons，随 for_llm 注入下一轮）
 ├── plugins/
 │   └── ra.rb                     # ra 身份契约：我是谁 / 我学过什么 / 我不能做什么
 └── lib/
@@ -88,7 +106,9 @@ ruby-agent-self-iteration/
 │       ├── knowledge.rb          # 经验仓库：沉淀 / 去重 / 原子落盘
 │       ├── memory.rb             # 记忆=结构化数据：本体论 SCHEMA + YAML + recall + 折叠
 │       ├── iteration.rb          # 迭代闭环：多轮执行 + 沉淀 + 反馈
-│       └── code_editor.rb        # 代码级编辑：替换 / 试编译 / 回滚 / 作用域隔离
+│       ├── code_editor.rb        # 代码级编辑：替换 / 试编译 / 回滚 / 作用域隔离
+│       ├── prop_solver.rb        # 命题逻辑判定器：AST 求值 / 2^n 枚举 / verify / countermodels
+│       └── sop_pipe.rb           # SopPipe 四锁判分：解剖×机验互锁评审台（隔离锁零容忍翻译作弊）
 ├── spec/
 │   ├── spec_helper.rb            # 测试配置与夹具
 │   ├── ruby_agent_spec.rb        # 入口与组件装配
@@ -107,6 +127,11 @@ ruby-agent-self-iteration/
 │   ├── code_loop_spec.rb         # 代码闭环：apply → verify → 自动回滚 → 重试
 │   ├── memory_spec.rb            # 记忆层：本体论校验 / 双通道 / recall / 折叠 / 并发
 │   ├── memory_loop_spec.rb       # 记忆闭环：remember / 自动沉淀 / 注入与折叠
+│   ├── prop_solver_spec.rb       # 验证器：AST / 枚举 / verify / 一致性 / solver 对拍
+│   ├── sop_pipe_spec.rb          # 评审台：四锁分支 / 多标签 / 豁免 / 隔离锁 / 畸形兜底
+│   ├── golden_regression_spec.rb # 黄金回归：46 方法冻结（不烧 key 的 CI 复验）
+│   ├── property_regression_spec.rb # 属性回归：机器出卷无限新题
+│   ├── exam_mode_spec.rb         # 考场：拦截写库 + 文件落盘隔离
 │   └── ra_spec.rb                # ra 自明：身份契约 / mount_ra / whoami
 └── plugins/
     └── ra.rb                     # ra 身份契约（自我认知的唯一来源）
