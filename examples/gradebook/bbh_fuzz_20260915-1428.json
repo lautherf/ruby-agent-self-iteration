@@ -1,0 +1,311 @@
+{
+  "generated_at": "2026-09-15T14:28:44+08:00",
+  "live": true,
+  "model": "agnes-2.5-flash",
+  "total": 6,
+  "passed": 6,
+  "rows": [
+    {
+      "name": "fuzz99",
+      "verdict": "PASS",
+      "machine": "B",
+      "objects": [
+        "A",
+        "B",
+        "C"
+      ],
+      "constraints": [
+        [
+          "adjacent",
+          "C",
+          "A"
+        ],
+        [
+          "not_pos",
+          "A",
+          1
+        ],
+        [
+          "adjacent",
+          "B",
+          "C"
+        ]
+      ],
+      "models": 1
+    },
+    {
+      "name": "fuzz04",
+      "verdict": "PASS",
+      "machine": "B",
+      "objects": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G"
+      ],
+      "constraints": [
+        [
+          "adjacent",
+          "F",
+          "B"
+        ],
+        [
+          "adjacent",
+          "C",
+          "E"
+        ],
+        [
+          "adjacent",
+          "G",
+          "D"
+        ],
+        [
+          "adjacent",
+          "F",
+          "C"
+        ],
+        [
+          "between",
+          "D",
+          "B",
+          "A"
+        ],
+        [
+          "left",
+          "B",
+          "A"
+        ],
+        [
+          "right",
+          "D",
+          "C"
+        ],
+        [
+          "between",
+          "E",
+          "C",
+          "G"
+        ],
+        [
+          "pos",
+          "C",
+          3
+        ],
+        [
+          "adjacent",
+          "G",
+          "A"
+        ]
+      ],
+      "models": 1
+    },
+    {
+      "name": "fuzz00",
+      "verdict": "PASS",
+      "machine": "B",
+      "objects": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G"
+      ],
+      "constraints": [
+        [
+          "left",
+          "B",
+          "E"
+        ],
+        [
+          "pos",
+          "D",
+          3
+        ],
+        [
+          "right",
+          "D",
+          "B"
+        ],
+        [
+          "pos",
+          "B",
+          1
+        ],
+        [
+          "left",
+          "E",
+          "G"
+        ],
+        [
+          "right",
+          "C",
+          "B"
+        ],
+        [
+          "between",
+          "E",
+          "C",
+          "F"
+        ],
+        [
+          "pos",
+          "A",
+          5
+        ],
+        [
+          "between",
+          "C",
+          "B",
+          "E"
+        ],
+        [
+          "right",
+          "E",
+          "C"
+        ],
+        [
+          "adjacent",
+          "F",
+          "A"
+        ]
+      ],
+      "models": 1
+    },
+    {
+      "name": "fuzz10",
+      "verdict": "PASS",
+      "machine": "C",
+      "objects": [
+        "A",
+        "B",
+        "C"
+      ],
+      "constraints": [
+        [
+          "not_pos",
+          "C",
+          3
+        ],
+        [
+          "between",
+          "C",
+          "A",
+          "B"
+        ],
+        [
+          "adjacent",
+          "C",
+          "A"
+        ],
+        [
+          "adjacent",
+          "A",
+          "C"
+        ],
+        [
+          "right",
+          "C",
+          "A"
+        ]
+      ],
+      "models": 1
+    },
+    {
+      "name": "fuzz81",
+      "verdict": "PASS",
+      "machine": "A",
+      "objects": [
+        "A",
+        "B",
+        "C"
+      ],
+      "constraints": [
+        [
+          "between",
+          "C",
+          "B",
+          "A"
+        ],
+        [
+          "adjacent",
+          "C",
+          "A"
+        ],
+        [
+          "adjacent",
+          "C",
+          "B"
+        ],
+        [
+          "not_pos",
+          "B",
+          3
+        ]
+      ],
+      "models": 1
+    },
+    {
+      "name": "fuzz32",
+      "verdict": "PASS",
+      "machine": "C",
+      "objects": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G"
+      ],
+      "constraints": [
+        [
+          "adjacent",
+          "A",
+          "C"
+        ],
+        [
+          "adjacent",
+          "D",
+          "G"
+        ],
+        [
+          "right",
+          "G",
+          "F"
+        ],
+        [
+          "pos",
+          "B",
+          2
+        ],
+        [
+          "between",
+          "C",
+          "G",
+          "A"
+        ],
+        [
+          "pos",
+          "E",
+          3
+        ],
+        [
+          "pos",
+          "F",
+          1
+        ],
+        [
+          "adjacent",
+          "G",
+          "E"
+        ]
+      ],
+      "models": 1
+    }
+  ]
+}

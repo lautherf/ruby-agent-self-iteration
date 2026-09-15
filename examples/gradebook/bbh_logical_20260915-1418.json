@@ -1,0 +1,324 @@
+{
+  "generated_at": "2026-09-15T14:18:36+08:00",
+  "model": "agnes-2.5-flash",
+  "total": 9,
+  "passed": 9,
+  "rows": [
+    {
+      "name": "left-chain",
+      "verdict": "PASS",
+      "gold_ans": "C",
+      "machine": "C",
+      "objects": [
+        "A",
+        "B",
+        "C"
+      ],
+      "constraints": [
+        [
+          "left",
+          "A",
+          "B"
+        ],
+        [
+          "left",
+          "B",
+          "C"
+        ]
+      ],
+      "models": 1
+    },
+    {
+      "name": "between-middle",
+      "verdict": "PASS",
+      "gold_ans": "A",
+      "machine": "A",
+      "objects": [
+        "A",
+        "B",
+        "C"
+      ],
+      "constraints": [
+        [
+          "between",
+          "A",
+          "B",
+          "C"
+        ],
+        [
+          "right",
+          "A",
+          "B"
+        ]
+      ],
+      "models": 1
+    },
+    {
+      "name": "adjacent-left-end",
+      "verdict": "PASS",
+      "gold_ans": "A",
+      "machine": "A",
+      "objects": [
+        "A",
+        "B",
+        "C"
+      ],
+      "constraints": [
+        [
+          "left",
+          "A",
+          "B"
+        ],
+        [
+          "adjacent",
+          "A",
+          "B"
+        ],
+        [
+          "pos",
+          "C",
+          3
+        ]
+      ],
+      "models": 1
+    },
+    {
+      "name": "pos-and-exclusion",
+      "verdict": "PASS",
+      "gold_ans": "B",
+      "machine": "B",
+      "objects": [
+        "A",
+        "B",
+        "C"
+      ],
+      "constraints": [
+        [
+          "pos",
+          "A",
+          2
+        ],
+        [
+          "not_pos",
+          "B",
+          3
+        ]
+      ],
+      "models": 1
+    },
+    {
+      "name": "right-between-question",
+      "verdict": "PASS",
+      "gold_ans": "C",
+      "machine": "C",
+      "objects": [
+        "A",
+        "B",
+        "C"
+      ],
+      "constraints": [
+        [
+          "right",
+          "A",
+          "B"
+        ],
+        [
+          "between",
+          "C",
+          "A",
+          "B"
+        ]
+      ],
+      "models": 1
+    },
+    {
+      "name": "ends-and-middle",
+      "verdict": "PASS",
+      "gold_ans": "B",
+      "machine": "B",
+      "objects": [
+        "A",
+        "B",
+        "C"
+      ],
+      "constraints": [
+        [
+          "pos",
+          "A",
+          1
+        ],
+        [
+          "right",
+          "B",
+          "A"
+        ],
+        [
+          "pos",
+          "C",
+          3
+        ]
+      ],
+      "models": 1
+    },
+    {
+      "name": "seven-chain-pins",
+      "verdict": "PASS",
+      "gold_ans": "D",
+      "machine": "D",
+      "objects": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G"
+      ],
+      "constraints": [
+        [
+          "pos",
+          "A",
+          3
+        ],
+        [
+          "pos",
+          "G",
+          1
+        ],
+        [
+          "pos",
+          "B",
+          7
+        ],
+        [
+          "left",
+          "D",
+          "E"
+        ],
+        [
+          "adjacent",
+          "D",
+          "E"
+        ],
+        [
+          "left",
+          "C",
+          "D"
+        ],
+        [
+          "left",
+          "F",
+          "D"
+        ],
+        [
+          "left",
+          "F",
+          "C"
+        ]
+      ],
+      "models": 1
+    },
+    {
+      "name": "seven-between-pins",
+      "verdict": "PASS",
+      "gold_ans": "B",
+      "machine": "B",
+      "objects": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G"
+      ],
+      "constraints": [
+        [
+          "pos",
+          "G",
+          2
+        ],
+        [
+          "pos",
+          "A",
+          4
+        ],
+        [
+          "pos",
+          "D",
+          7
+        ],
+        [
+          "pos",
+          "B",
+          6
+        ],
+        [
+          "left",
+          "E",
+          "A"
+        ],
+        [
+          "between",
+          "F",
+          "E",
+          "C"
+        ],
+        [
+          "right",
+          "C",
+          "F"
+        ]
+      ],
+      "models": 1
+    },
+    {
+      "name": "seven-adjacent-pins",
+      "verdict": "PASS",
+      "gold_ans": "F",
+      "machine": "F",
+      "objects": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G"
+      ],
+      "constraints": [
+        [
+          "pos",
+          "B",
+          3
+        ],
+        [
+          "pos",
+          "A",
+          5
+        ],
+        [
+          "pos",
+          "C",
+          7
+        ],
+        [
+          "adjacent",
+          "E",
+          "C"
+        ],
+        [
+          "right",
+          "G",
+          "B"
+        ],
+        [
+          "left",
+          "F",
+          "D"
+        ]
+      ],
+      "models": 1
+    }
+  ]
+}
