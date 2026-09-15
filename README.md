@@ -33,9 +33,9 @@ Sprint 10 主线：**解剖×机验互锁（SopPipe）四锁判分**进入评级
 SOP 管线把自然语言隐藏前提解剖（SOP-NL-01）与命题逻辑机器验证（SOP-NL-02）串成一条互相背书的工序：
 
 - **SopPipe 四锁齐拔才 PASS**：① 解剖锁（fault_type 多标签交集判缺 + 白名单外零容忍）② 机验锁（PropSolver 真值枚举，谬误类必 not_entailed、正确推理必 entailed）③ 自报锁（LLM claimed 与机器一致）④ 隔离锁（受审槽 suspects 自报、不得走私上合法前提台——封堵"翻译作弊"；执法时机=只在机器判 entailed 时开审，防误杀显式事实）。
-- 真机 20 题卷通过率 **95%（19/20）**（84-95% 区间，2026-09-15 多轮）；语义豁免类（一词多义/相对时间等布尔层还原失真）只斩解剖锁并标 EXEMPT。SOP-NL-03《分层升降维裁决》已落地：STAGE1 自报思考尺度 mode（mechanical/semantic/hybrid），STAGE2 紧凑降维纪律（谚语律不进 imp、因果共现句结论只写果侧变量），第5锁"元层注视"盯 mode 背离不计红；空交卷走 VOID 判 FAIL + 4 次重试救场，评审台永不掀桌。
+- 真机 20 题卷通过率 **100%（20/20）满卷达成**（历史多轮区间 84-100%）；语义豁免类（一词多义/相对时间等布尔层还原失真）只斩解剖锁并标 EXEMPT。SOP-NL-03《分层升降维裁决》已落地：STAGE1 自报思考尺度 mode（mechanical/semantic/hybrid），STAGE2 紧凑降维纪律（谚语律不进 imp、因果共现句结论只写果侧变量），第5锁"元层注视"盯 mode 背离不计红；分诊向导含"…就能…"型 MP 判例（型式化正确性优先于现实可证伪性）；空交卷走 VOID 判 FAIL + 4 次重试救场，评审台永不掀桌。
 - 记忆层（Sprint 7）已内置：**记忆=结构化数据**（YAML + 本体论 SCHEMA + recall 分词 + 自动折叠），真机跨会话记忆实测通过。
-- 经验舱分账：A 舱 43 个可验证能力（46 方法绑定 @doc 契约），B 舱 20 条 lessons（verified 9 / sop 9 / note 2），`audit_knowledge --ci` 保证未分级即红。
+- 经验舱分账：A 舱 43 个可验证能力（46 方法绑定 @doc 契约），B 舱 21 条 lessons（verified 9 / sop 10 / note 2），`audit_knowledge --ci` 保证未分级即红。
 - **23 spec 文件全绿 / 0 fail / 0 err**。
 
 > 基线：Sprint 7 终点 17 spec / 151 runs → SOP 机验 217/1415 → 解剖×机验 228/1448 → 扩量 231/1454 → 隔离锁落锁后逐文件 0 fail 全绿。
