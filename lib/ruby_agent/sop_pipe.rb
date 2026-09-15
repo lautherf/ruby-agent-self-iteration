@@ -37,7 +37,7 @@ module SopPipe
     m.freeze
   end
 
-  Judge = Struct.new(:pass, :fault_hit, :verify_hit, :claimed_aligned, :exempt, :diag, keyword_init: true)
+  Judge = Struct.new(:pass, :fault_hit, :verify_hit, :claimed_aligned, :exempt, :isolated, :diag, keyword_init: true)
 
   # fault_type 字段可含逗号/顿号/斜杠分隔的多标签；解析出白名单内 actual 与名单外 oob。
   # oob 一旦非空即解剖锁必红（零容忍自创词）。
@@ -68,29 +68,45 @@ module SopPipe
       raise ArgumentError, "provable 类 #{fault} 必须提供 stage2" if stage2.nil?
 
       begin
-        premises = stage2['premises'] || []
+        premises   = stage2['premises'] || []
         conclusion = stage2['conclusion']
-        claimed = stage2['claimed'].to_s
-        machine = (conclusion && !premises.empty?) ? PropSolver.verify(premises, conclusion)[:entailed] : nil
+        claimed    = stage2['claimed'].to_s
+        suspects   = Array(stage2['suspects']).map(&:to_s).reject(&:empty?)
+        machine    = (conclusion && !premises.empty?) ? PropSolver.verify(premises, conclusion)[:entailed] : nil
       rescue StandardError => e
         machine = :crash
       end
       verify_ok = machine == (expected == :entailed)
       claimed_ok = claimed == (machine == :crash ? nil : (machine ? 'entailed' : 'not_entailed'))
+
+      # 受审槽隔离锁（SopLock·翻译作弊不赦·lesson_017 晋级版）——机验产物对谬误类
+      # 必须交付 suspects 白名单自报（把受审槽一个个抱上被告席），且受审槽不得作为
+      # **顶层完整前提**摆上 premises 合法前提台（那正是把翻译作弊的结果当合法前提）。
+      # 判定用顶层 include? 而不是 flatten 盲扫：合法复合前提 A→B 里含受审槽 A 是
+      # 前提的天然构成（三段论里前提当然要谈推论项），不该被误杀；翻译作弊的实锤形态
+      # 是受审槽单独成一格前提（`"I"` 裸变量顶上），那才是"把被告请上原告席"。
+      # 复合成分内的走私由机验锁兜底——受审槽嵌进 imp(I,D) 再当条件推 D，机器反例仍会说 not_entailed。
+      #   · suspects 空自报 = 藏被告（把受审槽藏进 vault 不发审）→ 零赦红
+      #   · 受审槽 ∈ 顶层 premises = 翻译作弊实锤（受审槽混进合法前提台）→ 零赦红
+      #   · 受审槽仅是复合前提的成分变量 = 合法构成，不斩（机验锁继续背书）
+      #   · 正确推理(:entailed)/豁免(nil) 不碰受审槽 → 恒绿
+      isolated = expected == :entailed || expected.nil? ||
+                 suspects.any? && (suspects & premises).empty?
     else
       verify_ok = true
       claimed_ok = true
+      isolated = true
     end
 
-    pass = fault_hit && verify_ok && claimed_ok
+    pass = fault_hit && verify_ok && claimed_ok && isolated
     Judge.new(
       pass: pass, fault_hit: fault_hit, verify_hit: verify_ok, claimed_aligned: claimed_ok,
-      exempt: exempt,
-      diag: diag_of(fault_hit, verify_ok, claimed_ok, exempt, stage1, stage2, expected)
+      exempt: exempt, isolated: isolated,
+      diag: diag_of(fault_hit, verify_ok, claimed_ok, exempt, isolated, stage1, stage2, expected)
     )
   end
 
-  def self.diag_of(fault_hit, verify_ok, claimed_ok, exempt, stage1, stage2, expected)
+  def self.diag_of(fault_hit, verify_ok, claimed_ok, exempt, isolated, stage1, stage2, expected)
     parts = []
     parsed = parse_tags(stage1)
     if stage1
@@ -107,6 +123,15 @@ module SopPipe
       parts << "机器推演=#{machine == :crash ? 'crash' : (machine ? 'entailed' : 'not_entailed')}（期望 #{expected}）#{verify_ok ? '' : ' ← 不符'}"
       if stage2.is_a?(Hash)
         parts << "自报=#{stage2['claimed'].to_s.inspect}#{claimed_ok ? '' : ' ← 与机器不符'}"
+      end
+      unless isolated
+        suspects = Array(stage2 && stage2['suspects']).map(&:to_s).reject(&:empty?)
+        if suspects.empty?
+          parts << '隔离锁红：受审槽零自报（藏被告不发审）'
+        else
+          smuggled = suspects & (stage2['premises'] || [])
+          parts << "隔离锁红：受审槽 #{smuggled.inspect} 走私上合法前提台"
+        end
       end
     else
       parts << 'EXEMPT：语义类仅斩解剖锁'
