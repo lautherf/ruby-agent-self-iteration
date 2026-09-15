@@ -266,6 +266,21 @@ def main
       puts "  FAIL   #%03d [VOID]" % i
       next
     end
+    # rank 概念端是比语义层 head 更硬的方向证据：约束用了某概念端则 head 必须与该概念一致
+    if (concept = cons.filter_map { |c| c[0] == 'rank' && %w[new old expensive cheap first].include?(c[3]) ? c[3] : nil }.first)
+      if head.to_s != concept
+        warn "    ↻ rank 概念端 #{concept} 仲裁 head #{head.inspect} → #{concept}"
+        head = concept
+        orders = begin
+          solve_orders(objects, cons, head)
+        rescue StandardError => e
+          stats[:crash] += 1
+          rows << { idx: i, verdict: 'FAIL', diag: "crash #{e.message[0, 50]}" }
+          puts "  FAIL   #%03d [crash] %s" % [i, e.message[0, 60]]
+          next
+        end
+      end
+    end
     if orders.empty?
       stats[:fail_contra] += 1
       rows << { idx: i, verdict: 'FAIL', diag: '约束矛盾（无误模型）', constraints: cons, head: head }
@@ -308,23 +323,29 @@ def main
             end
       machine = orders.first[pos - 1]
       pass = machine == target_obj
-      # 概念题唯一解但答案不符 → 语义层方向极可能翻转，补一次复查方向（仅失败时花一次调用）
-      if !pass && !offline && %w[new old expensive cheap first].include?(head.to_s) && extra_runs < 3
+      # 概念题唯一解但答案不符 → 语义层方向极可能翻转，补一次独立复查（不并集，方向翻转并集反而矛盾）
+      if !pass && !offline && extra_runs < 3 && %w[new old expensive cheap first].include?(head.to_s)
         recheck = run_semantic(BBH_OFFICIAL_PROMPT.gsub('{{OBJECTS}}', objects.inspect)
-                                                   .gsub('{{TEXT}}', input + "\n\n⚠ 复查：上次将 more/…er 关系编成了 after，请确认 head 与 before/after 的方向完全一致."))
-        if recheck
-          cons2 = (cons | recheck['constraints'])
+                                                   .gsub('{{TEXT}}', input + "\n\n⚠ 复查：上次的方向判反了，例如 'older than' 应编码为 before(更旧在前) 而非 after。请复查 before/after 与 head 的方向是否完全一致。"))
+        if recheck && recheck['constraints'].is_a?(Array)
+          rhead = recheck['head'] || head
           begin
-            orders2 = solve_orders(objects, cons2, head)
+            rorders = solve_orders(objects, recheck['constraints'], rhead)
           rescue StandardError
-            orders2 = []
+            rorders = []
           end
-          if orders2.size == 1
-            cons = cons2
-            orders = orders2
-            machine = orders.first[pos - 1]
-            pass = machine == target_obj
-            warn "    ↻ 概念题复查方向：machine=#{machine.inspect} target=#{target_obj.inspect} pass=#{pass}"
+          if rorders.size == 1
+            opts_r = parse_options(input, objects, rhead)
+            r_rank, r_side = opts_r[target_letter] ? opts_r[target_letter].values_at(:rank, :side) : [nil, nil]
+            if r_rank
+              rpos = r_side == :abs ? r_rank : (r_side == :h ? r_rank : 3 - r_rank + 1)
+              rmachine = rorders.first[rpos - 1]
+              if rmachine == target_obj
+                cons, orders, head, opts = recheck['constraints'], rorders, rhead, opts_r
+                rank, side, pos, machine, pass = r_rank, r_side, rpos, rmachine, true
+                warn "    ↻ 独立复查 PASS：#{machine.inspect}==#{target_obj.inspect}（方向翻转已修正 head=#{head.inspect}）"
+              end
+            end
           end
         end
       end
