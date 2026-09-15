@@ -88,3 +88,8 @@ end
 # @doc grade: sop
 def lesson_017
 end
+# @doc note: 隔离锁执法时机修订（SopLock·事实检证回归·真机 Y2026-09-15）：lesson_017 的独立式"受审槽不得上顶层台"在真机 20 题首轮被证伪——rain（"今天路滑"S）与 failure-proverb（"他失败很多次"F）两例里，受审槽变量与句子**显式事实**天然重合：模型老实把显式事实独立成格照指令办理，机器 not_entailed 诚实裁决，却因受审槽在顶层被隔离锁误斩（13/20 落 2 例，且非模型错）。修订：**隔离锁只在 machine==entailed（机器判 entailed）时开审**——唯此状态才存在"受审槽把机器带偏"的作弊疑云；机器 not_entailed 时受审槽顶层摆放=显式事实合规，恒绿。双锁分工自此清晰：隔离锁管"受审槽上原告席"（harvest 谚语律 imp(G,H) 入前提、icecream 结论改写 imp(I,D)+and 让机器 entailed 逃逸的形态），机验锁管"机器被带偏"——两者都只在 entailed 时才有第二锚点。修订后离线重放真机存档：13/20 → **15/20 (75%)**，超此前 70% 峰值；剩余 FAIL=解剖跨槽（正确推理被挑刺、ocean 互补→组块/概率）+ 自报撒谎（survivor 机器 not_entailed 模型自报 entailed）。坑：判定条件曾误写 `machine != :entailed`（PropSolver 返回布尔而符号），导致隔离锁**恒豁免**——比较布尔要用 `machine != true`。协议卫生也保持：suspects 字段缺失 run_stage 自动重试，畸形 premises 走 Array() 兜底不掀桌。
+# @doc tags: 隔离锁,执法时机,事实检证,显式事实,双锁分工,真机回放
+# @doc grade: sop
+def lesson_018
+end

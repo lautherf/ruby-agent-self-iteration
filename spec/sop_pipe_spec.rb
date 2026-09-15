@@ -160,11 +160,11 @@ class SopPipeSpec < Minitest::Test
   end
 
   def test_diag_pins_translation_cheat_source
-    # FAIL 归因：diag 必须指名走私的受审槽，否则真机 14/20 的 FAIL 无法定位是人话翻错
-    # 还是翻译作弊——机验兜底后隔离锁是唯一能说出"谁在作弊"的一锁
+    # FAIL 归因：diag 必须指名走私的受审槽，否则真机 FAIL 无法定位是人话翻错
+    # 还是翻译作弊——entailed 疑云下隔离锁是唯一能说出"谁在作弊"的一锁
     stage1 = { 'fault_type' => '因果混淆', 'hidden_premise' => '…', 'reason' => '…' }
-    stage2 = { 'premises' => ['I'], 'conclusion' => 'D',
-               'claimed' => 'not_entailed', 'suspects' => ['I'] }
+    stage2 = { 'premises' => [['imp', 'I', 'D'], 'I'], 'conclusion' => 'D',
+               'claimed' => 'entailed', 'suspects' => ['I'] }
     j = SopPipe.judge(stage1, stage2, '因果混淆')
     refute j.pass
     assert_includes j.diag, '走私'
@@ -172,21 +172,22 @@ class SopPipeSpec < Minitest::Test
   end
 
   def test_suspect_smuggled_into_premises_red
-    # 受审槽 B 同时坐 suspects 自报又混进 premises（把被告请上原告席）= 翻译作弊实锤
-    # —— lesson_017 评审学正章：机验再 not_entailed 也斩（零赦，这正是隔离锁存在的理由）
+    # 机器判 entailed 时隔离锁开审：受审槽 B 坐 suspects 自报又混进顶层 premises
+    # （把被告请上原告席）= 翻译作弊实锤——lesson_018 执法时机：唯 entailed 疑云下才定罪
     stage1 = { 'fault_type' => '三段论滥用', 'hidden_premise' => '…', 'reason' => '…' }
-    stage2 = { 'premises' => ['B'], 'conclusion' => 'A',
-               'claimed' => 'not_entailed', 'suspects' => ['B'] }
+    stage2 = { 'premises' => [['imp', 'B', 'A'], 'B'], 'conclusion' => 'A',
+               'claimed' => 'entailed', 'suspects' => ['B'] }
     j = SopPipe.judge(stage1, stage2, '三段论滥用')
     refute j.pass, "受审槽 B 混进 premises=走私实锤，隔离锁必斩：#{(j.diag || '')}"
     refute j.isolated
   end
 
   def test_suspect_empty_self_report_is_hidden_defendant
-    # 谬误类交付 suspects 空自报 = 把被告藏进 vault 一根不发审 → 隔离锁零赦红
+    # 机器判 entailed 疑云下 suspects 空自报 = 把被告藏进 vault 一根不发审 → 隔离锁零赦红；
+    # 机器 not_entailed 时零自报不另行定罪（显式事实天然重合，见豁免用例）
     stage1 = { 'fault_type' => '三段论滥用', 'hidden_premise' => '…', 'reason' => '…' }
-    stage2 = { 'premises' => ['B'], 'conclusion' => 'A',
-               'claimed' => 'not_entailed', 'suspects' => [] }
+    stage2 = { 'premises' => [['imp', 'B', 'A'], 'B'], 'conclusion' => 'A',
+               'claimed' => 'entailed', 'suspects' => [] }
     j = SopPipe.judge(stage1, stage2, '三段论滥用')
     refute j.pass, "空自报=藏被告，隔离锁应收红：#{(j.diag || '')}"
     refute j.isolated
@@ -230,23 +231,38 @@ class SopPipeSpec < Minitest::Test
     refute j.pass, "畸形 premises 应判 FAIL 而非崩溃：#{(j.diag || '')}"
   end
 
-  def test_malformed_premises_array_wrapped_in_diag
-    stage1 = { 'fault_type' => '三段论滥用', 'hidden_premise' => '…', 'reason' => '…' }
-    stage2 = { 'premises' => ['B'], 'conclusion' => 'A',
-               'claimed' => 'not_entailed', 'suspects' => [] }
-    j = SopPipe.judge(stage1, stage2, '三段论滥用')
-    assert_includes j.diag, '零自报'
-    refute j.pass
-  end
-
   def test_multi_tag_suspect_lock_still_guards
     # 复合错位"因果混淆,量词误用"：解剖锁按交集判缺、隔离锁对受审槽独立生效——
-    # 受审槽 I 顶层走私是翻译作弊实锤，与 fault 是否复合无关，照斩（锁与锁互不稀释）
+    # machine=entailed 疑云下受审槽 I 顶层走私是翻译作弊实锤，与 fault 是否复合无关照斩
     stage1 = { 'fault_type' => '因果混淆,量词误用', 'hidden_premise' => '…' }
-    stage2 = { 'premises' => ['I'], 'conclusion' => 'D',
-               'claimed' => 'not_entailed', 'suspects' => ['I'] }
+    stage2 = { 'premises' => [['imp', 'I', 'D'], 'I'], 'conclusion' => 'D',
+               'claimed' => 'entailed', 'suspects' => ['I'] }
     j = SopPipe.judge(stage1, stage2, '因果混淆')
     refute j.pass, "多标签下受审槽走私仍应斩：#{(j.diag || '')}"
     refute j.isolated
+  end
+
+  def test_compound_smuggle_not_isolated_but_verify_wins
+    # icecream 真机形态：受审槽嵌 and(I,D) 复合前提内部 + 结论改写 imp(I,D) → 机器必 entailed。
+    # 隔离锁只审顶层、放过复合内部（那是机验锁的地盘），但机验锁当场把它抓杀——
+    # 双锁分工：隔离锁管"受审槽上原告席"，机验锁管"机器被带偏"，互不替代
+    stage1 = { 'fault_type' => '因果混淆', 'hidden_premise' => '…', 'reason' => '…' }
+    stage2 = { 'premises' => [['and', 'I', 'D']], 'conclusion' => ['imp', 'I', 'D'],
+               'claimed' => 'entailed', 'suspects' => ['I', 'D'] }
+    j = SopPipe.judge(stage1, stage2, '因果混淆')
+    refute j.pass, "复合内走私靠机验锁抓，仍应 FAIL：#{(j.diag || '')}"
+    refute j.verify_hit
+    assert j.isolated # 隔离锁不斩复合内部（放行给机验锁）
+  end
+
+  def test_suspect_on_top_with_not_entailed_is_explicit_fact
+    # lesson_018 事实检证：机器 not_entailed 时受审槽在顶层 premises 是句子显式事实的合规摆放——
+    # rain（"今天路滑"S）与 failure（"他失败很多次"F）两例真机被独立式隔离锁误斩，修订后豁免
+    stage1 = { 'fault_type' => '谚语全称滥用', 'hidden_premise' => '…', 'reason' => '…' }
+    stage2 = { 'premises' => ['F'], 'conclusion' => 'S',
+               'claimed' => 'not_entailed', 'suspects' => ['F'] }
+    j = SopPipe.judge(stage1, stage2, '谚语全称滥用')
+    assert j.pass, "机器 not_entailed 时受审槽顶层=显式事实，隔离锁应豁免：#{(j.diag || '')}"
+    assert j.isolated
   end
 end

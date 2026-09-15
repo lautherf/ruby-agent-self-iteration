@@ -79,20 +79,22 @@ module SopPipe
       verify_ok = machine == (expected == :entailed)
       claimed_ok = claimed == (machine == :crash ? nil : (machine ? 'entailed' : 'not_entailed'))
 
-      # 受审槽隔离锁（SopLock·翻译作弊不赦·lesson_017 晋级版）——机验产物对谬误类
-      # 必须交付 suspects 白名单自报（把受审槽一个个抱上被告席），且受审槽不得作为
-      # **顶层完整前提**摆上 premises 合法前提台（那正是把翻译作弊的结果当合法前提）。
-      # 判定用顶层 include? 而不是 flatten 盲扫：合法复合前提 A→B 里含受审槽 A 是
-      # 前提的天然构成（三段论里前提当然要谈推论项），不该被误杀；翻译作弊的实锤形态
-      # 是受审槽单独成一格前提（`"I"` 裸变量顶上），那才是"把被告请上原告席"。
-      # 复合成分内的走私由机验锁兜底——受审槽嵌进 imp(I,D) 再当条件推 D，机器反例仍会说 not_entailed。
-      #   · suspects 空自报 = 藏被告（把受审槽藏进 vault 不发审）→ 零赦红
-      #   · 受审槽 ∈ 顶层 premises = 翻译作弊实锤（受审槽混进合法前提台）→ 零赦红
-      #   · 受审槽仅是复合前提的成分变量 = 合法构成，不斩（机验锁继续背书）
-      #   · 正确推理(:entailed)/豁免(nil) 不碰受审槽 → 恒绿
-      #   注：premises 顶层可能被模型交付为非数组畸形值（字符串等）→ Array() 兜底比交集，
-      #      让隔离锁判 FAIL 而不是 TypeError 掀翻整个判分器（机验锁已 crash 兜底）。
+      # 受审槽隔离锁（SopLock·执法时机修订版·lesson_018 事实检证回归）——机验产物对谬误类
+      # 必须交付 suspects 白名单自报（把被告一个个抱上被告席），且受审槽不得作为
+      # **顶层完整前提**摆上 premises 合法前提台。判定用顶层 include? 而非 flatten 盲扫：
+      # 合法复合前提 A→B 里含受审槽 A 是前提天然构成；翻译作弊的实锤形态是受审槽独自成格。
+      #
+      # 执法时机（真机事实检证 Y2026-09-15 修订）：隔离锁只在 **machine == :entailed** 时开审——
+      # 唯此状态才存在"受审槽把机器带偏"的作弊疑云：
+      #   · 机器判 not_entailed → 无受审槽把机器带偏 → 恒绿。受审槽变量常与句子显式事实
+      #     天然重合（rain："今天路滑"S 就该独立成格；failure："他失败很多次"F 同理），
+      #     此前独立式"受审槽不上顶层台"把这两例 honest 形式化误斩成 FAIL（真机 7 FAIL 占 2）。
+      #   · 机器判 entailed → 开审：suspects 空=藏被告红；受审槽顶层走私红——双锁合璧定罪，
+      #     与机验锁互为第二锚点（harvest 谚语律进前提）；复合前提内部（imp/and 内层）不放隔离
+      #     锁（icecream 形态），那是机验锁的地盘：机器反例仍会 say not_entailed 兜底。
+      #   · 正确推理(:entailed)/豁免(nil) 不碰受审槽 → 恒绿。
       isolated = expected == :entailed || expected.nil? ||
+                 machine != true ||
                  suspects.any? && (suspects & Array(premises)).empty?
     else
       verify_ok = true
