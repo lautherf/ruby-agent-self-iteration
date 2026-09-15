@@ -184,9 +184,10 @@ end
 def main
   path = ARGV.find { |a| !a.start_with?('--') }
   limit = (i = ARGV.index('--limit')) ? ARGV[i + 1].to_i : 10
+  offset = (j = ARGV.index('--offset')) ? ARGV[j + 1].to_i : 0
   offline = ARGV.include?('--offline')
   data = JSON.parse(File.read(path))
-  examples = data['examples']
+  examples = data['examples'].drop(offset)
 
   if ARGV.include?('--syntax')
     heads = %w[left right new old expensive cheap first]
@@ -207,7 +208,7 @@ def main
 
   examples = examples.first(limit) if limit.positive?
 
-  puts "═══ BBH·official logical_deduction (three_objects) — 语义层+#{offline ? '脱机' : '真机'} ═══"
+  puts "═══ BBH·official logical_deduction (three_objects) [offset=%d, limit=%d] — %s ═══" % [offset, limit, offline ? '脱机' : '真机']
 
   stats = { pass: 0, fail_parse: 0, fail_void: 0, fail_contra: 0, fail_option: 0, fail_multi: 0, fail_miss: 0, crash: 0 }
   rows = []
@@ -283,7 +284,12 @@ def main
     end
 
     if orders.size == 1
-      pos = side == :h ? rank : 3 - rank + 1
+      # head=right 时头端在序列末尾（排列为左→右），pos 需翻转
+      pos = if head == 'right'
+              side == :t ? rank : 3 - rank + 1
+            else
+              side == :h ? rank : 3 - rank + 1
+            end
       machine = orders.first[pos - 1]
       pass = machine == target_obj
       stats[:pass] += 1 if pass
