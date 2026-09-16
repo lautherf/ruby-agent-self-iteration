@@ -1,0 +1,441 @@
+{
+  "generated_at": "2026-09-16T23:30:13+08:00",
+  "model": "agnes-2.5-flash",
+  "total": 10,
+  "rows": [
+    {
+      "idx": 0,
+      "verdict": "FAIL",
+      "head": "expensive",
+      "cons": [
+        [
+          "after",
+          "pears",
+          "oranges"
+        ],
+        [
+          "after",
+          "mangoes",
+          "kiwis"
+        ],
+        [
+          "rank",
+          "plums",
+          2,
+          "expensive"
+        ],
+        [
+          "before",
+          "loquats",
+          "apples"
+        ],
+        [
+          "after",
+          "kiwis",
+          "apples"
+        ],
+        [
+          "rank",
+          "loquats",
+          4,
+          "expensive"
+        ]
+      ],
+      "order": "oranges < plums < pears < loquats < apples < kiwis < mangoes",
+      "pos": 1,
+      "machine": "oranges",
+      "target_obj": "pears"
+    },
+    {
+      "idx": 1,
+      "verdict": "FAIL",
+      "head": "expensive",
+      "cons": [
+        [
+          "after",
+          "loquats",
+          "kiwis"
+        ],
+        [
+          "rank",
+          "plums",
+          1,
+          "cheap"
+        ],
+        [
+          "rank",
+          "loquats",
+          4,
+          "expensive"
+        ],
+        [
+          "after",
+          "peaches",
+          "oranges"
+        ],
+        [
+          "before",
+          "peaches",
+          "kiwis"
+        ],
+        [
+          "rank",
+          "apples",
+          2,
+          "cheap"
+        ]
+      ],
+      "order": "oranges < peaches < kiwis < loquats < cantaloupes < apples < plums",
+      "pos": 1,
+      "machine": "oranges",
+      "target_obj": "loquats"
+    },
+    {
+      "idx": 2,
+      "verdict": "PASS",
+      "head": "first",
+      "cons": [
+        [
+          "before",
+          "Mya",
+          "Eli"
+        ],
+        [
+          "after",
+          "Eve",
+          "Rob"
+        ],
+        [
+          "rank",
+          "Amy",
+          2,
+          "left"
+        ],
+        [
+          "after",
+          "Rob",
+          "Dan"
+        ],
+        [
+          "rank",
+          "Ana",
+          6,
+          "left"
+        ],
+        [
+          "rank",
+          "Dan",
+          4,
+          "left"
+        ]
+      ],
+      "order": "Mya < Amy < Eli < Dan < Rob < Ana < Eve",
+      "pos": 1,
+      "machine": "Mya",
+      "target_obj": "Mya"
+    },
+    {
+      "idx": 3,
+      "verdict": "PASS",
+      "head": "expensive",
+      "cons": [
+        [
+          "rank",
+          "pears",
+          2,
+          "cheap"
+        ],
+        [
+          "before",
+          "cantaloupes",
+          "peaches"
+        ],
+        [
+          "before",
+          "peaches",
+          "mangoes"
+        ],
+        [
+          "before",
+          "kiwis",
+          "cantaloupes"
+        ],
+        [
+          "rank",
+          "oranges",
+          4,
+          "cheap"
+        ],
+        [
+          "rank",
+          "watermelons",
+          6,
+          "cheap"
+        ]
+      ],
+      "order": "kiwis < watermelons < cantaloupes < oranges < peaches < pears < mangoes",
+      "pos": 6,
+      "machine": "pears",
+      "target_obj": "pears"
+    },
+    {
+      "idx": 4,
+      "verdict": "PASS",
+      "head": "first",
+      "cons": [
+        [
+          "rank",
+          "Ana",
+          7,
+          "first"
+        ],
+        [
+          "before",
+          "Mya",
+          "Rob"
+        ],
+        [
+          "before",
+          "Dan",
+          "Mya"
+        ],
+        [
+          "rank",
+          "Rob",
+          4,
+          "first"
+        ],
+        [
+          "rank",
+          "Eli",
+          2,
+          "first"
+        ],
+        [
+          "before",
+          "Mel",
+          "Ada"
+        ]
+      ],
+      "order": "Dan < Eli < Mya < Rob < Mel < Ada < Ana",
+      "pos": 2,
+      "machine": "Eli",
+      "target_obj": "Eli"
+    },
+    {
+      "idx": 5,
+      "verdict": "PASS",
+      "head": "new",
+      "cons": [
+        [
+          "rank",
+          "a convertible",
+          2,
+          "new"
+        ],
+        [
+          "before",
+          "a station wagon",
+          "a truck"
+        ],
+        [
+          "before",
+          "a bus",
+          "a hatchback"
+        ],
+        [
+          "rank",
+          "a truck",
+          4,
+          "new"
+        ],
+        [
+          "after",
+          "a station wagon",
+          "a tractor"
+        ],
+        [
+          "rank",
+          "a sedan",
+          1,
+          "old"
+        ]
+      ],
+      "order": "a tractor < a convertible < a station wagon < a truck < a bus < a hatchback < a sedan",
+      "pos": 2,
+      "machine": "a convertible",
+      "target_obj": "a convertible"
+    },
+    {
+      "idx": 6,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "before",
+          "a falcon",
+          "a crow"
+        ],
+        [
+          "after",
+          "a quail",
+          "a cardinal"
+        ],
+        [
+          "after",
+          "a hummingbird",
+          "a quail"
+        ],
+        [
+          "rank",
+          "a falcon",
+          2,
+          "right"
+        ],
+        [
+          "before",
+          "a hummingbird",
+          "a hawk"
+        ],
+        [
+          "rank",
+          "a owl",
+          3,
+          "left"
+        ]
+      ],
+      "order": "a cardinal < a quail < an owl < a hummingbird < a hawk < a falcon < a crow",
+      "pos": 1,
+      "machine": "a cardinal",
+      "target_obj": "a cardinal"
+    },
+    {
+      "idx": 7,
+      "verdict": "FAIL",
+      "diag": "非唯一解",
+      "constraints": [
+        [
+          "rank",
+          "a truck",
+          1,
+          "old"
+        ],
+        [
+          "rank",
+          "a tractor",
+          1,
+          "new"
+        ],
+        [
+          "before",
+          "a sedan",
+          "a station wagon"
+        ],
+        [
+          "rank",
+          "a station wagon",
+          3,
+          "new"
+        ],
+        [
+          "before",
+          "a bus",
+          "a convertible"
+        ],
+        [
+          "before",
+          "a sedan",
+          "a convertible"
+        ]
+      ],
+      "n": 8
+    },
+    {
+      "idx": 8,
+      "verdict": "PASS",
+      "head": "new",
+      "cons": [
+        [
+          "after",
+          "a motorcyle",
+          "a tractor"
+        ],
+        [
+          "after",
+          "a hatchback",
+          "a limousine"
+        ],
+        [
+          "before",
+          "a hatchback",
+          "a truck"
+        ],
+        [
+          "before",
+          "a truck",
+          "a tractor"
+        ],
+        [
+          "rank",
+          "a minivan",
+          2,
+          "new"
+        ],
+        [
+          "rank",
+          "a sedan",
+          3,
+          "new"
+        ]
+      ],
+      "order": "a limousine < a minivan < a sedan < a hatchback < a truck < a tractor < a motorcyle",
+      "pos": 1,
+      "machine": "a limousine",
+      "target_obj": "a limousine"
+    },
+    {
+      "idx": 9,
+      "verdict": "PASS",
+      "head": "new",
+      "cons": [
+        [
+          "rank",
+          "a convertible",
+          2,
+          "new"
+        ],
+        [
+          "before",
+          "a station wagon",
+          "a truck"
+        ],
+        [
+          "before",
+          "a bus",
+          "a hatchback"
+        ],
+        [
+          "rank",
+          "a truck",
+          4,
+          "new"
+        ],
+        [
+          "after",
+          "a station wagon",
+          "a tractor"
+        ],
+        [
+          "rank",
+          "a sedan",
+          1,
+          "old"
+        ]
+      ],
+      "order": "a tractor < a convertible < a station wagon < a truck < a bus < a hatchback < a sedan",
+      "pos": 6,
+      "machine": "a hatchback",
+      "target_obj": "a hatchback"
+    }
+  ]
+}
