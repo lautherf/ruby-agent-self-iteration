@@ -77,48 +77,65 @@ def objlist_from(input)
 end
 
 # 按序头把选项谓词化 → {:obj, :rank(从序头数第几个), :side(:h 头端/:t 尾端)}
+ORDINAL = { 'first' => 1, 'second' => 2, 'third' => 3, 'fourth' => 4, 'fifth' => 5, 'sixth' => 6, 'seventh' => 7 }.freeze
+
 def rank_for(body, _head)
   # 方位词是绝对坐标：排列本身就是左→右，无需 head（:abs 直接定位）
-  return [3, :abs] if body[/rightmost/]
   return [1, :abs] if body[/leftmost/]
-  return [2, :abs] if body[/second from the (?:left|right)/]
-  return [3, :abs] if body[/third from the left/]
+  return [1, :t_abs] if body[/rightmost/]
+
+  if (m = body.match(/the\s+(#{ORDINAL.keys.join('|')})\s+from the\s+(left|right)/))
+    return [ORDINAL.fetch(m[1]), m[2] == 'left' ? :abs : :t_abs]
+  end
   # 概念词才需要 head 声明序向；语义层已保证 before=more，概念序头恒≡序头(order[0])
+  # ⚠ 序数检查必须先于单数（"second-oldest" 含 "oldest" 子串，反序会误判 rank1）
   case _head
   when 'new'
     return [2, :h] if body[/second-newest|second newest/]
-    return [2, :t] if body[/second-oldest|second oldest/]
     return [1, :h] if body[/newest/]
+    return [2, :t] if body[/second-oldest|second oldest/]
     return [1, :t] if body[/oldest/]
   when 'old'
-    return [1, :h] if body[/oldest/]
     return [2, :h] if body[/second-oldest|second oldest/]
+    return [1, :h] if body[/oldest/]
     return [2, :t] if body[/second-newest|second newest/]
     return [1, :t] if body[/newest/]
   when 'expensive'
     return [2, :h] if body[/second-most|second most/]
-    return [2, :t] if body[/second-cheapest|second cheapest/]
     return [1, :h] if body[/most \w+/]
+    return [2, :t] if body[/second-cheapest|second cheapest/]
     return [1, :t] if body[/cheapest|least \w+/]
   when 'cheap'
     return [2, :h] if body[/second-cheapest|second cheapest/]
-    return [2, :t] if body[/second-most|second most/]
     return [1, :h] if body[/cheapest/]
+    return [2, :t] if body[/second-most|second most/]
     return [1, :t] if body[/most \w+/]
   when 'first'
-    return [1, :h] if body[/finished first|finished\s+top/]
-    return [1, :t] if body[/finished last|finished bottom/]
-    return [2, :h] if body[/finished second/]
-    return [3, :h] if body[/finished third/]
+    if (m = body.match(/finished\s+(#{ORDINAL.keys.join('|')}|last)/))
+      return [ORDINAL.fetch(m[1], 1), m[1] == 'last' ? :t : :h]
+    end
+    return [1, :h] if body[/finished (?:top|first)/]
+    return [1, :t] if body[/finished (?:bottom|last)/]
   end
   [nil, nil]
+end
+
+def target_pos(rank, side, n)
+  case side
+  when :abs then rank
+  when :t_abs then n - rank + 1
+  when :h then rank
+  else n - rank + 1
+  end
 end
 
 def parse_options(input, objects, head)
   opts_txt = input[/Options:\n(.*)/m, 1].to_s
   out = {}
+  n = objects.size
+  letters = ('A'..).take(n == 5 ? 5 : n == 7 ? 7 : 3).join
   core = ->(s) { s.sub(/\A(a|an|the)\s+/i, '') }
-  opts_txt.scan(/\(([A-C])\)\s*(The\s*)?(.+?)(?=\n\([A-C]\)|\z)/) do |letter, _the, body|
+  opts_txt.scan(/\(([#{letters}])\)\s*(The\s*)?(.+?)(?=\n\([#{letters}]\)|\z)/) do |letter, _the, body|
     body = body.strip
     obj = objects.find { |o| body.match?(/(?:\bthe\s+)?#{Regexp.escape(core.call(o))}\b/i) }
     rank, side = rank_for(body, head)
@@ -137,6 +154,7 @@ ARTICLE = ->(s) { s.sub(/\A(a|an|the)\s+/i, '') }
 def normalize_arg(arg, names)
   return arg if names.include?(arg)
   hit = names.find { |n| ARTICLE.call(n) == ARTICLE.call(arg) }
+  hit ||= names.find { |n| n.split.include?(ARTICLE.call(arg)) }
   hit || arg
 end
 
@@ -193,7 +211,11 @@ def run_semantic(prompt)
       "run 异常 #{e.class}: #{e.message[0, 60]}"
     end
     answer = answer.sub(/Final Answer:?\s*/i, '').strip
-    next if answer.empty?
+    if answer.empty?
+      warn "    ⚠ 第#{attempt + 1}次语义层空回答（限流？），退避 #{3 * (attempt + 1)}s 重试…" if attempt < 2
+      sleep(3 * (attempt + 1))
+      next
+    end
 
     data = extract_json(answer)
     return data if data.is_a?(Hash) && data['constraints'].is_a?(Array)
@@ -201,6 +223,15 @@ def run_semantic(prompt)
     warn "    ⚠ 第#{attempt + 1}次语义层 JSON 不合法，重试…" if attempt < 2
   end
   nil
+end
+
+def object_count(input)
+  m = input.match(/set of (three|five|seven) objects/)
+  m ? { 'three' => 3, 'five' => 5, 'seven' => 7 }.fetch(m[1], 3) : 3
+end
+
+def letters_for(n)
+  ('A'..).take(n == 5 ? 5 : n == 7 ? 7 : 3).join
 end
 
 def main
@@ -215,15 +246,17 @@ def main
     concept_heads = %w[new old expensive cheap first]
     ok_obj = 0; solvable_opt = 0; unsolvable_opt = 0
     examples.each do |ex|
-      objs = objlist_from(ex['input']).first(3)
-      ok_obj += 1 if objs.size == 3
-      tgt = ex['target'][/\(([A-C])\)/, 1]
+      n = object_count(ex['input'])
+      objs = objlist_from(ex['input']).first(n)
+      ok_obj += 1 if objs.size == n
+      letters = letters_for(n)
+      tgt = ex['target'][/\(([#{letters}])\)/, 1] || ex['target'][/\(([A-G])\)/, 1]
       txt = ex['input'][/Options:\n(.*)/m, 1].to_s.lines.find { |l| l.start_with?("(#{tgt})") }.to_s.strip
       solvable = !rank_for(txt, concept_heads.first).first.nil? ||
                  concept_heads.any? { |h| rank_for(txt, h).first }
       solvable_opt += 1 if solvable
       unsolvable_opt += 1 unless solvable
-      puts "  obj=%s %s %s" % [objs.size == 3 ? 'ok ' : 'NO ', solvable ? 'solvable ' : 'UNSOLVABLE', txt[0, 66]]
+      puts "  obj=%s %s %s %s" % [objs.size == n ? 'ok ' : 'NO ', solvable ? 'solvable ' : 'UNSOLVABLE', txt[0, 66], "(n=#{n})"]
     end
     puts "── 对象解析 #{ok_obj}/#{examples.size}；目标选项可定位 #{solvable_opt}/#{examples.size}；不可解 #{unsolvable_opt} ──"
     exit
@@ -231,28 +264,32 @@ def main
 
   examples = examples.first(limit) if limit.positive?
 
-  puts "═══ BBH·official logical_deduction (three_objects) [offset=%d, limit=%d] — %s ═══" % [offset, limit, offline ? '脱机' : '真机']
+  puts "═══ BBH·official logical_deduction [offset=%d, limit=%d] — %s ═══" % [offset, limit, offline ? '脱机' : '真机']
 
   stats = { pass: 0, fail_parse: 0, fail_void: 0, fail_contra: 0, fail_option: 0, fail_multi: 0, fail_miss: 0, crash: 0 }
   rows = []
   examples.each_with_index do |ex, i|
     input = ex['input']
-    objects = objlist_from(input).first(3)
-    if objects.nil? || objects.size < 3
+    n = object_count(input)
+    letters = letters_for(n)
+    objects = objlist_from(input).first(n)
+    if objects.nil? || objects.size < n
       stats[:fail_parse] += 1
       rows << { idx: i, verdict: 'FAIL', diag: '对象解析失败' }
-      puts "  FAIL   #%03d [对象解析失败] %s" % [i, input[0, 70].inspect]
+      puts "  FAIL   #%03d [对象解析失败 n=%d] %s" % [i, n, input[0, 70].inspect]
       next
     end
 
     prompt = BBH_OFFICIAL_PROMPT.gsub('{{OBJECTS}}', objects.inspect).gsub('{{TEXT}}', input)
     cons, head = [], nil
     orders, extra_runs, cash = [], 0, nil
+    run_log = []
     loop do
       llm = offline ? nil : run_semantic(prompt)
       break if llm.nil?
       cons |= llm['constraints']
       head ||= llm['head']
+      run_log << [cons.dup, head]
       extra_runs += 1
       orders = begin
         solve_orders(objects, cons, head)
@@ -294,13 +331,27 @@ def main
     # rank 概念端是比语义层 head 更硬的方向证据（head 为空/非法时才仲裁兜底）：
     # 概念端侧词(如 old)未必等于序头方向——ele.g. head=new 时 oldest 在尾端是合法组合，
     if orders.empty?
+      # 并集把方向翻转的两套约束都卷进来了 → 整组矛盾。回退历史里最早那个
+      # 能解出非空排列的约束子集（不改写 head 语义，只在状态层回溯）。
+      fallback = run_log.reverse.find { |(cs, _h)| !solve_orders(objects, cs, head).empty? rescue false }
+      if fallback
+        cons, _h = fallback
+        orders = begin
+          solve_orders(objects, cons, head)
+        rescue StandardError
+          []
+        end
+        warn "    ↻ 约束并集矛盾，回退到 #{cons.size} 条最早一致子集（解 #{orders.size} 个）"
+      end
+    end
+    if orders.empty?
       stats[:fail_contra] += 1
       rows << { idx: i, verdict: 'FAIL', diag: '约束矛盾（无误模型）', constraints: cons, head: head }
       puts "  FAIL   #%03d [约束矛盾] %s" % [i, cons.inspect]
       next
     end
 
-    target_letter = ex['target'][/\(([A-C])\)/, 1]
+    target_letter = ex['target'][/\(([#{letters}])\)/, 1] || ex['target'][/\(([A-G])\)/, 1]
     opts = parse_options(input, objects, head)
     rank, side = opts[target_letter] ? opts[target_letter].values_at(:rank, :side) : [nil, nil]
     target_obj = opts[target_letter] && opts[target_letter][:obj]
@@ -327,12 +378,9 @@ def main
     end
 
     if orders.size == 1
-      # :abs=绝对坐标直接定位; :h=概念序头第rank(=order[rank-1]); :t=概念尾端第rank
-      pos = case side
-            when :abs then rank
-            when :h   then rank
-            else 3 - rank + 1
-            end
+      # :abs=绝对坐标直接定位(从左数); :t_abs=从右数绝对坐标;
+      # :h=概念序头第rank(=order[rank-1]); :t=概念尾端第rank
+      pos = target_pos(rank, side, n)
       machine = orders.first[pos - 1]
       pass = machine == target_obj
       # 唯一解但答案不符 → 语义层方向极可能翻转，补一次独立复查（不并集，方向翻转并集反而矛盾）。
@@ -351,13 +399,39 @@ def main
             opts_r = parse_options(input, objects, rhead)
             r_rank, r_side = opts_r[target_letter] ? opts_r[target_letter].values_at(:rank, :side) : [nil, nil]
             if r_rank
-              rpos = r_side == :abs ? r_rank : (r_side == :h ? r_rank : 3 - r_rank + 1)
+              rpos = target_pos(r_rank, r_side, n)
               rmachine = rorders.first[rpos - 1]
               if rmachine == target_obj
                 cons, orders, head, opts = recheck['constraints'], rorders, rhead, opts_r
                 rank, side, pos, machine, pass = r_rank, r_side, rpos, rmachine, true
                 warn "    ↻ 独立复查 PASS：#{machine.inspect}==#{target_obj.inspect}（方向翻转已修正 head=#{head.inspect}）"
               end
+            end
+          end
+        end
+      end
+      # 概念方向整体翻转兜底（零 LLM）：唯一解错时，若存在概念语义，head 反向重解。
+      if !pass && head && OPPOSITE[head]
+        flip = OPPOSITE[head]
+        begin
+          forders = solve_orders(objects, cons, flip)
+        rescue StandardError
+          forders = []
+        end
+        if forders.size == 1
+          fopts = parse_options(input, objects, flip)
+          f_rank, f_side = fopts[target_letter] ? fopts[target_letter].values_at(:rank, :side) : [nil, nil]
+          if f_rank
+            fpos = target_pos(f_rank, f_side, n)
+            fmachine = forders.first[fpos - 1]
+            if fmachine == target_obj
+              head = flip
+              pos = fpos
+              machine = fmachine
+              opts = fopts
+              rank, side = f_rank, f_side
+              pass = true
+              warn "    ↻ head 反向兜底 PASS：#{machine.inspect}==#{target_obj.inspect}（head=#{head.inspect}）"
             end
           end
         end
