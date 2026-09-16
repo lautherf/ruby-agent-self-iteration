@@ -1,0 +1,1757 @@
+{
+  "generated_at": "2026-09-16T09:06:20+08:00",
+  "model": "machine",
+  "total": 250,
+  "rows": [
+    {
+      "idx": 0,
+      "verdict": "PASS",
+      "input": "not ( True ) and ( True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 1,
+      "verdict": "PASS",
+      "input": "True and not not ( not False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 2,
+      "verdict": "PASS",
+      "input": "not True or False or ( False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 3,
+      "verdict": "PASS",
+      "input": "False or not ( True ) and False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 4,
+      "verdict": "PASS",
+      "input": "True or not False and True and False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 5,
+      "verdict": "PASS",
+      "input": "False or not not not False and True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 6,
+      "verdict": "PASS",
+      "input": "not True and ( False or True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 7,
+      "verdict": "PASS",
+      "input": "True and not False or ( True ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 8,
+      "verdict": "PASS",
+      "input": "not True or ( False and True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 9,
+      "verdict": "PASS",
+      "input": "not True or ( True or False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 10,
+      "verdict": "PASS",
+      "input": "False or ( False ) and not False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 11,
+      "verdict": "PASS",
+      "input": "not False or True and False and False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 12,
+      "verdict": "PASS",
+      "input": "not True or False or not not True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 13,
+      "verdict": "PASS",
+      "input": "True and True and False and not True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 14,
+      "verdict": "PASS",
+      "input": "not not True and not True or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 15,
+      "verdict": "PASS",
+      "input": "not not not ( True and False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 16,
+      "verdict": "PASS",
+      "input": "not not False and not not not False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 17,
+      "verdict": "PASS",
+      "input": "( True and not True and False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 18,
+      "verdict": "PASS",
+      "input": "False and False and False or not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 19,
+      "verdict": "PASS",
+      "input": "False or ( False and not False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 20,
+      "verdict": "PASS",
+      "input": "True and False or ( not True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 21,
+      "verdict": "PASS",
+      "input": "not not ( True ) and not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 22,
+      "verdict": "PASS",
+      "input": "not False or ( True ) and True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 23,
+      "verdict": "PASS",
+      "input": "not ( True ) or False or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 24,
+      "verdict": "PASS",
+      "input": "( True and not not not True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 25,
+      "verdict": "PASS",
+      "input": "( False or not False or False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 26,
+      "verdict": "PASS",
+      "input": "False and False or True and not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 27,
+      "verdict": "PASS",
+      "input": "not not False or not False or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 28,
+      "verdict": "PASS",
+      "input": "True and not True or False or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 29,
+      "verdict": "PASS",
+      "input": "not False or True and False or False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 30,
+      "verdict": "PASS",
+      "input": "False and ( not False ) or False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 31,
+      "verdict": "PASS",
+      "input": "not not not not ( not False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 32,
+      "verdict": "PASS",
+      "input": "( True ) and True or not True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 33,
+      "verdict": "PASS",
+      "input": "not True or False and False and False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 34,
+      "verdict": "PASS",
+      "input": "not not not not not not not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 35,
+      "verdict": "PASS",
+      "input": "not True or not False and not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 36,
+      "verdict": "PASS",
+      "input": "False or True or False and not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 37,
+      "verdict": "PASS",
+      "input": "not ( True or True ) and False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 38,
+      "verdict": "PASS",
+      "input": "not not not not True and not True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 39,
+      "verdict": "PASS",
+      "input": "( False ) or False and not True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 40,
+      "verdict": "PASS",
+      "input": "( False and True or not False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 41,
+      "verdict": "PASS",
+      "input": "not not not ( False and True ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 42,
+      "verdict": "PASS",
+      "input": "not not True and not False or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 43,
+      "verdict": "PASS",
+      "input": "not False or True and not not True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 44,
+      "verdict": "PASS",
+      "input": "True or True or not False or False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 45,
+      "verdict": "PASS",
+      "input": "( not False and False and False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 46,
+      "verdict": "PASS",
+      "input": "( ( not True ) or True ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 47,
+      "verdict": "PASS",
+      "input": "not not ( not False or True ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 48,
+      "verdict": "PASS",
+      "input": "not True or False or ( True ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 49,
+      "verdict": "PASS",
+      "input": "False or ( not False ) and True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 50,
+      "verdict": "PASS",
+      "input": "not False or False or ( False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 51,
+      "verdict": "PASS",
+      "input": "not not False or False and not True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 52,
+      "verdict": "PASS",
+      "input": "True or ( ( not True ) ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 53,
+      "verdict": "PASS",
+      "input": "not False and not False and not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 54,
+      "verdict": "PASS",
+      "input": "( False ) and not False and True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 55,
+      "verdict": "PASS",
+      "input": "( True ) and False or not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 56,
+      "verdict": "PASS",
+      "input": "( not False and ( True ) ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 57,
+      "verdict": "PASS",
+      "input": "False or not ( False ) or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 58,
+      "verdict": "PASS",
+      "input": "True and not False and not not True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 59,
+      "verdict": "PASS",
+      "input": "not True and True and True or False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 60,
+      "verdict": "PASS",
+      "input": "not not ( False and not True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 61,
+      "verdict": "PASS",
+      "input": "True or not ( ( False ) ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 62,
+      "verdict": "PASS",
+      "input": "False or not True or False or False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 63,
+      "verdict": "PASS",
+      "input": "False or not not True or not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 64,
+      "verdict": "PASS",
+      "input": "not ( True or True or False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 65,
+      "verdict": "PASS",
+      "input": "False or not not not not not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 66,
+      "verdict": "PASS",
+      "input": "not ( False ) or not not True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 67,
+      "verdict": "PASS",
+      "input": "True and not False or False and False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 68,
+      "verdict": "PASS",
+      "input": "True or ( not ( True ) ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 69,
+      "verdict": "PASS",
+      "input": "( False or True and not True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 70,
+      "verdict": "PASS",
+      "input": "False or not True and True or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 71,
+      "verdict": "PASS",
+      "input": "not not not not not not not True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 72,
+      "verdict": "PASS",
+      "input": "( not False ) and False or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 73,
+      "verdict": "PASS",
+      "input": "False and False or not ( True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 74,
+      "verdict": "PASS",
+      "input": "( not False or True ) and True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 75,
+      "verdict": "PASS",
+      "input": "not ( False ) and ( False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 76,
+      "verdict": "PASS",
+      "input": "False or True and not not not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 77,
+      "verdict": "PASS",
+      "input": "( True ) and True and not True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 78,
+      "verdict": "PASS",
+      "input": "( not True ) and True and False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 79,
+      "verdict": "PASS",
+      "input": "( not not True and not False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 80,
+      "verdict": "PASS",
+      "input": "True and ( False ) or not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 81,
+      "verdict": "PASS",
+      "input": "not not not False or False and False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 82,
+      "verdict": "PASS",
+      "input": "not not not False and True or False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 83,
+      "verdict": "PASS",
+      "input": "True or ( True or not False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 84,
+      "verdict": "PASS",
+      "input": "not False or ( ( False ) ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 85,
+      "verdict": "PASS",
+      "input": "not not ( False and not False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 86,
+      "verdict": "PASS",
+      "input": "not not not not True or not True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 87,
+      "verdict": "PASS",
+      "input": "False and not ( False or False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 88,
+      "verdict": "PASS",
+      "input": "True and True and True or not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 89,
+      "verdict": "PASS",
+      "input": "False or not False or True and True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 90,
+      "verdict": "PASS",
+      "input": "not False and False and False or False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 91,
+      "verdict": "PASS",
+      "input": "( False ) or not False or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 92,
+      "verdict": "PASS",
+      "input": "( not False ) or ( True ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 93,
+      "verdict": "PASS",
+      "input": "not not ( False or not True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 94,
+      "verdict": "PASS",
+      "input": "False or not False or False or False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 95,
+      "verdict": "PASS",
+      "input": "False or not False and ( False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 96,
+      "verdict": "PASS",
+      "input": "False or ( False ) or not True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 97,
+      "verdict": "PASS",
+      "input": "not True or False and True and True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 98,
+      "verdict": "PASS",
+      "input": "True or ( True or not True ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 99,
+      "verdict": "PASS",
+      "input": "True and not False and True or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 100,
+      "verdict": "PASS",
+      "input": "False or not False or not not True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 101,
+      "verdict": "PASS",
+      "input": "( True or not False ) or False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 102,
+      "verdict": "PASS",
+      "input": "False or not ( True ) and True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 103,
+      "verdict": "PASS",
+      "input": "not False and not True and not False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 104,
+      "verdict": "PASS",
+      "input": "False and ( True and not False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 105,
+      "verdict": "PASS",
+      "input": "not False or ( False ) or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 106,
+      "verdict": "PASS",
+      "input": "False and not ( False and True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 107,
+      "verdict": "PASS",
+      "input": "( True or not not not False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 108,
+      "verdict": "PASS",
+      "input": "False and ( False or not False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 109,
+      "verdict": "PASS",
+      "input": "False or not True or True and False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 110,
+      "verdict": "PASS",
+      "input": "True and not True or True and True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 111,
+      "verdict": "PASS",
+      "input": "( not False or ( True ) ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 112,
+      "verdict": "PASS",
+      "input": "( ( not ( True ) ) ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 113,
+      "verdict": "PASS",
+      "input": "False and False and not ( False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 114,
+      "verdict": "PASS",
+      "input": "not True and not True and not True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 115,
+      "verdict": "PASS",
+      "input": "not ( True or False ) or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 116,
+      "verdict": "PASS",
+      "input": "False or ( True ) or not True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 117,
+      "verdict": "PASS",
+      "input": "False or False and False or not True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 118,
+      "verdict": "PASS",
+      "input": "True or False or not True or False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 119,
+      "verdict": "PASS",
+      "input": "not True and ( True and True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 120,
+      "verdict": "PASS",
+      "input": "not True and True or True and False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 121,
+      "verdict": "PASS",
+      "input": "not False or ( True or True ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 122,
+      "verdict": "PASS",
+      "input": "not ( False or ( False ) ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 123,
+      "verdict": "PASS",
+      "input": "not ( True or True ) and True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 124,
+      "verdict": "PASS",
+      "input": "False or not False or True or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 125,
+      "verdict": "PASS",
+      "input": "False or False and not not not False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 126,
+      "verdict": "PASS",
+      "input": "not ( True or False or True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 127,
+      "verdict": "PASS",
+      "input": "( False ) or not True and False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 128,
+      "verdict": "PASS",
+      "input": "True and True and not not not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 129,
+      "verdict": "PASS",
+      "input": "( True ) or True and not True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 130,
+      "verdict": "PASS",
+      "input": "False and False and not True and False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 131,
+      "verdict": "PASS",
+      "input": "( True ) and not True or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 132,
+      "verdict": "PASS",
+      "input": "not not not True and False and False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 133,
+      "verdict": "PASS",
+      "input": "False and False and not not not True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 134,
+      "verdict": "PASS",
+      "input": "False and False or False or not True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 135,
+      "verdict": "PASS",
+      "input": "False or ( not ( False ) ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 136,
+      "verdict": "PASS",
+      "input": "not True and True and not not False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 137,
+      "verdict": "PASS",
+      "input": "( False ) and ( not False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 138,
+      "verdict": "PASS",
+      "input": "( not True ) and True or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 139,
+      "verdict": "PASS",
+      "input": "False and True and ( not False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 140,
+      "verdict": "PASS",
+      "input": "( ( True ) ) or not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 141,
+      "verdict": "PASS",
+      "input": "not True and False or False or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 142,
+      "verdict": "PASS",
+      "input": "True and not True and True and True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 143,
+      "verdict": "PASS",
+      "input": "( True or True or not False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 144,
+      "verdict": "PASS",
+      "input": "True or not False and True or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 145,
+      "verdict": "PASS",
+      "input": "( not ( False ) or False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 146,
+      "verdict": "PASS",
+      "input": "True and not ( True or False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 147,
+      "verdict": "PASS",
+      "input": "not ( False and True ) and True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 148,
+      "verdict": "PASS",
+      "input": "not ( True and True ) or False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 149,
+      "verdict": "PASS",
+      "input": "False or not True and not not False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 150,
+      "verdict": "PASS",
+      "input": "not True and False or False and False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 151,
+      "verdict": "PASS",
+      "input": "not True or True and False or False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 152,
+      "verdict": "PASS",
+      "input": "( not ( False ) and False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 153,
+      "verdict": "PASS",
+      "input": "False or ( True and not True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 154,
+      "verdict": "PASS",
+      "input": "not False and not True or not True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 155,
+      "verdict": "PASS",
+      "input": "( False or not not not False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 156,
+      "verdict": "PASS",
+      "input": "( not False ) or True and False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 157,
+      "verdict": "PASS",
+      "input": "( not not True ) or not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 158,
+      "verdict": "PASS",
+      "input": "True or not ( ( True ) ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 159,
+      "verdict": "PASS",
+      "input": "( False ) and False or not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 160,
+      "verdict": "PASS",
+      "input": "not False and True or ( True ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 161,
+      "verdict": "PASS",
+      "input": "True or not not ( not False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 162,
+      "verdict": "PASS",
+      "input": "False and not True and False and True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 163,
+      "verdict": "PASS",
+      "input": "not not True and True and not True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 164,
+      "verdict": "PASS",
+      "input": "not False or not ( not False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 165,
+      "verdict": "PASS",
+      "input": "not not ( True ) or not True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 166,
+      "verdict": "PASS",
+      "input": "( True and not True and True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 167,
+      "verdict": "PASS",
+      "input": "True or False or not True or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 168,
+      "verdict": "PASS",
+      "input": "not True or True and False and False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 169,
+      "verdict": "PASS",
+      "input": "True and not not not not not True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 170,
+      "verdict": "PASS",
+      "input": "not True and ( False ) and False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 171,
+      "verdict": "PASS",
+      "input": "False and False or not True and False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 172,
+      "verdict": "PASS",
+      "input": "True or False and not True and False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 173,
+      "verdict": "PASS",
+      "input": "not ( False or False or True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 174,
+      "verdict": "PASS",
+      "input": "not False or True or True and False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 175,
+      "verdict": "PASS",
+      "input": "not False and False or False or False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 176,
+      "verdict": "PASS",
+      "input": "( not True ) and ( False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 177,
+      "verdict": "PASS",
+      "input": "True and not not False and not False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 178,
+      "verdict": "PASS",
+      "input": "not ( not not False ) and True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 179,
+      "verdict": "PASS",
+      "input": "not ( not False ) and not False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 180,
+      "verdict": "PASS",
+      "input": "False or True and not False or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 181,
+      "verdict": "PASS",
+      "input": "( not not not True and True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 182,
+      "verdict": "PASS",
+      "input": "False and not ( True ) or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 183,
+      "verdict": "PASS",
+      "input": "( not True and False or True ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 184,
+      "verdict": "PASS",
+      "input": "not ( not not True ) or False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 185,
+      "verdict": "PASS",
+      "input": "( not False ) or ( False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 186,
+      "verdict": "PASS",
+      "input": "not not not False and True and False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 187,
+      "verdict": "PASS",
+      "input": "True or not True or not not True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 188,
+      "verdict": "PASS",
+      "input": "not False or not not False and False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 189,
+      "verdict": "PASS",
+      "input": "not False and ( False or False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 190,
+      "verdict": "PASS",
+      "input": "False and True or ( not False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 191,
+      "verdict": "PASS",
+      "input": "False and not False and ( False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 192,
+      "verdict": "PASS",
+      "input": "not ( ( False and True ) ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 193,
+      "verdict": "PASS",
+      "input": "False or ( not False ) and False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 194,
+      "verdict": "PASS",
+      "input": "False and not False or False and True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 195,
+      "verdict": "PASS",
+      "input": "not False and not not True and True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 196,
+      "verdict": "PASS",
+      "input": "True and True or False and not True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 197,
+      "verdict": "PASS",
+      "input": "not True or False and True or False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 198,
+      "verdict": "PASS",
+      "input": "True or False or not True and True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 199,
+      "verdict": "PASS",
+      "input": "False or False or not True or False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 200,
+      "verdict": "PASS",
+      "input": "False or False or True and not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 201,
+      "verdict": "PASS",
+      "input": "( not ( True or False ) ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 202,
+      "verdict": "PASS",
+      "input": "not False and False or True and True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 203,
+      "verdict": "PASS",
+      "input": "True and False or ( not False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 204,
+      "verdict": "PASS",
+      "input": "not False or not not not not True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 205,
+      "verdict": "PASS",
+      "input": "True and ( not ( True ) ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 206,
+      "verdict": "PASS",
+      "input": "True and False and not True or False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 207,
+      "verdict": "PASS",
+      "input": "( ( not False ) ) and True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 208,
+      "verdict": "PASS",
+      "input": "not ( True ) and ( False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 209,
+      "verdict": "PASS",
+      "input": "True or not False and False and False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 210,
+      "verdict": "PASS",
+      "input": "True and not ( False or False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 211,
+      "verdict": "PASS",
+      "input": "not True and False or False and True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 212,
+      "verdict": "PASS",
+      "input": "not True or not False and not True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 213,
+      "verdict": "PASS",
+      "input": "not True or False or True and True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 214,
+      "verdict": "PASS",
+      "input": "not True and True and False and True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 215,
+      "verdict": "PASS",
+      "input": "False and False or not True and True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 216,
+      "verdict": "PASS",
+      "input": "( not False or False and True ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 217,
+      "verdict": "PASS",
+      "input": "( True or False ) or not True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 218,
+      "verdict": "PASS",
+      "input": "not not not ( False ) and False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 219,
+      "verdict": "PASS",
+      "input": "not False and False and False and True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 220,
+      "verdict": "PASS",
+      "input": "False and not True and True or False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 221,
+      "verdict": "PASS",
+      "input": "( False or not False and False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 222,
+      "verdict": "PASS",
+      "input": "False or ( False or not False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 223,
+      "verdict": "PASS",
+      "input": "not False or True or False and False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 224,
+      "verdict": "PASS",
+      "input": "True or ( not False ) or True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 225,
+      "verdict": "PASS",
+      "input": "not False and False or True or False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 226,
+      "verdict": "PASS",
+      "input": "False and not ( not not False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 227,
+      "verdict": "PASS",
+      "input": "not not ( not True ) or False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 228,
+      "verdict": "PASS",
+      "input": "False and not True and True and False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 229,
+      "verdict": "PASS",
+      "input": "True or False and not ( True ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 230,
+      "verdict": "PASS",
+      "input": "not ( False ) and ( True ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 231,
+      "verdict": "PASS",
+      "input": "False and not ( ( True ) ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 232,
+      "verdict": "PASS",
+      "input": "not False or ( not not False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 233,
+      "verdict": "PASS",
+      "input": "( ( not False ) and False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 234,
+      "verdict": "PASS",
+      "input": "True or False and not False and True is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 235,
+      "verdict": "PASS",
+      "input": "( ( not True and True ) ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 236,
+      "verdict": "PASS",
+      "input": "not ( False ) or not not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 237,
+      "verdict": "PASS",
+      "input": "not ( False or False and False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 238,
+      "verdict": "PASS",
+      "input": "False and not ( not not True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 239,
+      "verdict": "PASS",
+      "input": "False and False and not ( True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 240,
+      "verdict": "PASS",
+      "input": "False or ( not False and False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 241,
+      "verdict": "PASS",
+      "input": "False or ( not not not True ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 242,
+      "verdict": "PASS",
+      "input": "( not False ) or not not False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 243,
+      "verdict": "PASS",
+      "input": "not False and False and True or False is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 244,
+      "verdict": "PASS",
+      "input": "True or not False and ( False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 245,
+      "verdict": "PASS",
+      "input": "( not ( False ) ) or False is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 246,
+      "verdict": "PASS",
+      "input": "True and not True or False and True is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 247,
+      "verdict": "PASS",
+      "input": "not ( not not not not False ) is",
+      "machine": "True",
+      "target": "True"
+    },
+    {
+      "idx": 248,
+      "verdict": "PASS",
+      "input": "True and ( not True or False ) is",
+      "machine": "False",
+      "target": "False"
+    },
+    {
+      "idx": 249,
+      "verdict": "PASS",
+      "input": "( not not not False or True ) is",
+      "machine": "True",
+      "target": "True"
+    }
+  ]
+}
