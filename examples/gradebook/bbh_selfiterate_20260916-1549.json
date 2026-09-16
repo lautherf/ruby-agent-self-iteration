@@ -1,0 +1,15 @@
+{
+  "generated_at": "2026-09-16T15:49:08+08:00",
+  "results": [
+    {
+      "idx": 7,
+      "diag": "PASS（机层修复已验证通过）",
+      "fixed": false
+    },
+    {
+      "idx": 17,
+      "diag": "PASS（机层修复已验证通过）",
+      "fixed": false
+    }
+  ]
+}

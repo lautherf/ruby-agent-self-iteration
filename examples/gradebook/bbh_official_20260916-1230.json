@@ -1,0 +1,118 @@
+{
+  "generated_at": "2026-09-16T12:30:51+08:00",
+  "model": "agnes-2.5-flash",
+  "total": 2,
+  "rows": [
+    {
+      "idx": 0,
+      "verdict": "PASS",
+      "head": "first",
+      "cons": [
+        [
+          "rank",
+          "Dan",
+          3,
+          "left"
+        ],
+        [
+          "before",
+          "Ana",
+          "Ada"
+        ],
+        [
+          "rank",
+          "Amy",
+          7,
+          "left"
+        ],
+        [
+          "before",
+          "Rob",
+          "Dan"
+        ],
+        [
+          "before",
+          "Ada",
+          "Eve"
+        ],
+        [
+          "before",
+          "Joe",
+          "Rob"
+        ]
+      ],
+      "order": "Joe < Rob < Dan < Ana < Ada < Eve < Amy",
+      "pos": 3,
+      "machine": "Dan",
+      "target_obj": "Dan"
+    },
+    {
+      "idx": 1,
+      "verdict": "FAIL",
+      "head": "new",
+      "cons": [
+        [
+          "rank",
+          "the station wagon",
+          4,
+          "new"
+        ],
+        [
+          "before",
+          "the motorcyle",
+          "the truck"
+        ],
+        [
+          "after",
+          "the station wagon",
+          "the hatchback"
+        ],
+        [
+          "before",
+          "the minivan",
+          "the hatchback"
+        ],
+        [
+          "before",
+          "the bus",
+          "the minivan"
+        ],
+        [
+          "rank",
+          "a station wagon",
+          4,
+          "new"
+        ],
+        [
+          "before",
+          "a motorcyle",
+          "a truck"
+        ],
+        [
+          "before",
+          "a hatchback",
+          "a station wagon"
+        ],
+        [
+          "before",
+          "a minivan",
+          "a hatchback"
+        ],
+        [
+          "before",
+          "a bus",
+          "a minivan"
+        ],
+        [
+          "before",
+          "a truck",
+          "a limousine"
+        ]
+      ],
+      "order": "a bus < a minivan < a hatchback < a station wagon < a motorcyle < a truck < a limousine",
+      "pos": 7,
+      "machine": "a limousine",
+      "target_obj": "a motorcyle"
+    }
+  ]
+}

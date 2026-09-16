@@ -1,0 +1,11 @@
+{
+  "generated_at": "2026-09-16T15:41:56+08:00",
+  "results": [
+    {
+      "idx": 7,
+      "diag": "唯一解但 machine=Joe != target=（方向 miss，属语义层）",
+      "fixable": false,
+      "fixed": false
+    }
+  ]
+}

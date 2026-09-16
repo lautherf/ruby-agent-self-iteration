@@ -1,0 +1,470 @@
+{
+  "generated_at": "2026-09-16T13:15:57+08:00",
+  "model": "agnes-2.5-flash",
+  "total": 10,
+  "rows": [
+    {
+      "idx": 0,
+      "verdict": "PASS",
+      "head": "first",
+      "cons": [
+        [
+          "rank",
+          "Amy",
+          3,
+          "first"
+        ],
+        [
+          "rank",
+          "Joe",
+          7,
+          "first"
+        ],
+        [
+          "before",
+          "Mya",
+          "Dan"
+        ],
+        [
+          "rank",
+          "Eve",
+          4,
+          "first"
+        ],
+        [
+          "before",
+          "Amy",
+          "Rob"
+        ],
+        [
+          "rank",
+          "Ada",
+          5,
+          "first"
+        ]
+      ],
+      "order": "Mya < Dan < Amy < Eve < Ada < Rob < Joe",
+      "pos": 2,
+      "machine": "Dan",
+      "target_obj": "Dan"
+    },
+    {
+      "idx": 1,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "before",
+          "a gray book",
+          "a purple book"
+        ],
+        [
+          "after",
+          "a white book",
+          "a brown book"
+        ],
+        [
+          "rank",
+          "a black book",
+          3,
+          "right"
+        ],
+        [
+          "before",
+          "a purple book",
+          "a white book"
+        ],
+        [
+          "rank",
+          "a white book",
+          2,
+          "right"
+        ],
+        [
+          "rank",
+          "a gray book",
+          3,
+          "left"
+        ],
+        [
+          "after",
+          "a brown book",
+          "a green book"
+        ]
+      ],
+      "order": "a green book < a brown book < a gray book < a purple book < a black book < a white book < a red book",
+      "pos": 3,
+      "machine": "a gray book",
+      "target_obj": "a gray book"
+    },
+    {
+      "idx": 2,
+      "verdict": "PASS",
+      "head": "expensive",
+      "cons": [
+        [
+          "after",
+          "watermelons",
+          "plums"
+        ],
+        [
+          "before",
+          "watermelons",
+          "oranges"
+        ],
+        [
+          "after",
+          "kiwis",
+          "oranges"
+        ],
+        [
+          "before",
+          "apples",
+          "loquats"
+        ],
+        [
+          "after",
+          "plums",
+          "mangoes"
+        ],
+        [
+          "rank",
+          "mangoes",
+          3,
+          "expensive"
+        ]
+      ],
+      "order": "apples < loquats < mangoes < plums < watermelons < oranges < kiwis",
+      "pos": 6,
+      "machine": "oranges",
+      "target_obj": "oranges"
+    },
+    {
+      "idx": 3,
+      "verdict": "FAIL",
+      "head": "new",
+      "cons": [
+        [
+          "rank",
+          "a truck",
+          1,
+          "old"
+        ],
+        [
+          "rank",
+          "a tractor",
+          1,
+          "new"
+        ],
+        [
+          "after",
+          "a sedan",
+          "a station wagon"
+        ],
+        [
+          "rank",
+          "a station wagon",
+          3,
+          "new"
+        ],
+        [
+          "after",
+          "a bus",
+          "a convertible"
+        ],
+        [
+          "before",
+          "a sedan",
+          "a convertible"
+        ]
+      ],
+      "order": "a tractor < a limousine < a station wagon < a sedan < a convertible < a bus < a truck",
+      "pos": 1,
+      "machine": "a tractor",
+      "target_obj": "a sedan"
+    },
+    {
+      "idx": 4,
+      "verdict": "PASS",
+      "head": "first",
+      "cons": [
+        [
+          "rank",
+          "Ana",
+          7,
+          "first"
+        ],
+        [
+          "before",
+          "Mya",
+          "Rob"
+        ],
+        [
+          "before",
+          "Dan",
+          "Mya"
+        ],
+        [
+          "rank",
+          "Rob",
+          4,
+          "first"
+        ],
+        [
+          "rank",
+          "Eli",
+          2,
+          "first"
+        ],
+        [
+          "before",
+          "Mel",
+          "Ada"
+        ]
+      ],
+      "order": "Dan < Eli < Mya < Rob < Mel < Ada < Ana",
+      "pos": 4,
+      "machine": "Rob",
+      "target_obj": "Rob"
+    },
+    {
+      "idx": 5,
+      "verdict": "PASS",
+      "head": "expensive",
+      "cons": [
+        [
+          "rank",
+          "kiwis",
+          1,
+          "expensive"
+        ],
+        [
+          "rank",
+          "watermelons",
+          3,
+          "expensive"
+        ],
+        [
+          "before",
+          "apples",
+          "oranges"
+        ],
+        [
+          "after",
+          "apples",
+          "peaches"
+        ],
+        [
+          "rank",
+          "loquats",
+          3,
+          "cheap"
+        ],
+        [
+          "rank",
+          "plums",
+          1,
+          "cheap"
+        ]
+      ],
+      "order": "kiwis < peaches < watermelons < apples < loquats < oranges < plums",
+      "pos": 2,
+      "machine": "peaches",
+      "target_obj": "peaches"
+    },
+    {
+      "idx": 6,
+      "verdict": "FAIL",
+      "head": "new",
+      "cons": [
+        [
+          "rank",
+          "a station wagon",
+          4,
+          "new"
+        ],
+        [
+          "before",
+          "a motorcyle",
+          "a truck"
+        ],
+        [
+          "before",
+          "a hatchback",
+          "a station wagon"
+        ],
+        [
+          "before",
+          "a minivan",
+          "a hatchback"
+        ],
+        [
+          "before",
+          "a bus",
+          "a minivan"
+        ],
+        [
+          "before",
+          "a truck",
+          "a limousine"
+        ]
+      ],
+      "order": "a bus < a minivan < a hatchback < a station wagon < a motorcyle < a truck < a limousine",
+      "pos": 1,
+      "machine": "a bus",
+      "target_obj": "a station wagon"
+    },
+    {
+      "idx": 7,
+      "verdict": "FAIL",
+      "diag": "非唯一解",
+      "constraints": [
+        [
+          "after",
+          "a motorcyle",
+          "a truck"
+        ],
+        [
+          "after",
+          "a station wagon",
+          "a hatchback"
+        ],
+        [
+          "before",
+          "a motorcyle",
+          "a hatchback"
+        ],
+        [
+          "rank",
+          "a bus",
+          2,
+          "new"
+        ],
+        [
+          "rank",
+          "a minivan",
+          1,
+          "old"
+        ]
+      ],
+      "n": 5
+    },
+    {
+      "idx": 8,
+      "verdict": "PASS",
+      "head": "left",
+      "cons": [
+        [
+          "before",
+          "a green book",
+          "a purple book"
+        ],
+        [
+          "before",
+          "a orange book",
+          "a white book"
+        ],
+        [
+          "before",
+          "a brown book",
+          "a green book"
+        ],
+        [
+          "before",
+          "a white book",
+          "a yellow book"
+        ],
+        [
+          "before",
+          "a yellow book",
+          "a red book"
+        ],
+        [
+          "before",
+          "a red book",
+          "a brown book"
+        ]
+      ],
+      "order": "an orange book < a white book < a yellow book < a red book < a brown book < a green book < a purple book",
+      "pos": 7,
+      "machine": "a purple book",
+      "target_obj": "a purple book"
+    },
+    {
+      "idx": 9,
+      "verdict": "FAIL",
+      "diag": "非唯一解",
+      "constraints": [
+        [
+          "rank",
+          "a truck",
+          1,
+          "old"
+        ],
+        [
+          "after",
+          "a tractor",
+          "a minivan"
+        ],
+        [
+          "rank",
+          "a minivan",
+          3,
+          "new"
+        ],
+        [
+          "rank",
+          "a limousine",
+          4,
+          "new"
+        ],
+        [
+          "before",
+          "a station wagon",
+          "a hatchback"
+        ],
+        [
+          "rank",
+          "a bus",
+          2,
+          "old"
+        ],
+        [
+          "rank",
+          "the truck",
+          1,
+          "old"
+        ],
+        [
+          "after",
+          "the tractor",
+          "the minivan"
+        ],
+        [
+          "rank",
+          "the minivan",
+          3,
+          "new"
+        ],
+        [
+          "rank",
+          "the limousine",
+          4,
+          "new"
+        ],
+        [
+          "before",
+          "the station wagon",
+          "the hatchback"
+        ],
+        [
+          "rank",
+          "the bus",
+          2,
+          "old"
+        ]
+      ],
+      "n": 2
+    }
+  ]
+}

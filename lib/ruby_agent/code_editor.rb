@@ -61,6 +61,15 @@ module RubyAgent
         span = self.class.method_span(lines, method)
         return false unless span
 
+        # 形态一致性强制：原方法若 `def name`，新代码必须也是 `def name`（instance 方法）；
+        # 原方法若 `def self.name`，新代码同样必须 `def self.name`。防 Agent 把 instance
+        # 方法漂移成 self./Klass. 形态（实例方法丢失、debug 的典型 bug 源）。
+        original = lines[span[0]].to_s
+        new_first = src.lines.first.to_s
+        orig_self = original.match?(/\A\s*def\s+(?:self|Klass)\./)
+        new_self  = new_first.match?(/\A\s*def\s+(?:self|Klass)\./)
+        return false unless orig_self == new_self
+
         head, tail = span
         new_lines = src.lines.map { |l| l.end_with?("\n") ? l : "#{l}\n" }
         next_src = (lines[0...head] + new_lines + lines[(tail + 1)..]).join

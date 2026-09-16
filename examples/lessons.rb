@@ -118,3 +118,18 @@ end
 # @doc grade: verified
 def lesson_023
 end
+# @doc note: target_pos :t_abs/:t 须 n-rank+1 反转以防方向全程反
+# @doc tags: bbh.target_pos
+# @doc grade: note
+def lesson_024
+end
+# @doc note: bbh.target_pos 的 :t_abs/:t（尾端/从右数）分支必须将 rank 反转为 n-rank+1；原实现错误地直接返回 rank，导致方向反的推理题全错。修复后 :abs/:h 仍原样返回 rank。
+# @doc tags: bbh.target_pos
+# @doc grade: note
+def lesson_025
+end
+# @doc note: bbh.target_pos 中 :t_abs/:t 方向需要返回 n-rank+1 而非 rank，否则从右数会方向反
+# @doc tags: bbh,target_pos,bug_fix
+# @doc grade: note
+def lesson_026
+end
