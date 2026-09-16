@@ -28,11 +28,19 @@ end
 def build_agent
   hub = RubyAgent::DocHub.new
   hub.mount(RubyAgent::DocPlugin.new('ra', File.expand_path('plugins/ra.rb', ROOT)).load!)
+  # RA 知识挂载（精简版，lesson_019 训诫：提示词越长模型越崩）：
+  # 只把 lesson_023 三物排序七戒教给语义层，绝不全量铺满经验库。
+  lessons_path = File.join(ROOT, 'examples', 'lessons.rb')
+  lesson = (RubyAgent::DocPlugin.new('knowledge', lessons_path).load!.registry['lesson_023'] || {})
+  kp2 = RubyAgent::DocPlugin.new('knowledge', lessons_path)
+  kp2.instance_variable_set(:@registry, { 'lesson_023' => lesson }) unless lesson.empty?
+  hub.mount(kp2) unless lesson.empty?
+  kb = RubyAgent::Knowledge.new(lessons_path)
   llm = RubyAgent::DeepSeekAdapter.new(
     base_url: ENV['AGNES_BASE_URL'] || 'https://apihub.agnes-ai.com/v1',
     api_key: ENV['AGNES_API_KEY'], model: ENV['AGNES_MODEL'] || 'agnes-2.5-flash'
   )
-  RubyAgent::AgentLoop.new(hub: hub, llm: llm, max_steps: 8, writable_plugins: ['ra'], mode: :exam)
+  RubyAgent::AgentLoop.new(hub: hub, llm: llm, max_steps: 8, writable_plugins: ['ra'], mode: :exam, knowledge: kb)
 end
 
 BBH_OFFICIAL_PROMPT = <<~PROMPT.freeze
@@ -249,11 +257,28 @@ def main
       orders = begin
         solve_orders(objects, cons, head)
       rescue StandardError => e
-        stats[:crash] += 1
-        rows << { idx: i, verdict: 'FAIL', diag: "crash #{e.message[0, 50]}" }
-        puts "  FAIL   #%03d [crash] %s" % [i, e.message[0, 60]]
-        cash = true
-        break
+        # rank 概念端与 head 冲突导致无法定位：不是直接 FAIL，而是该概念端
+        # 才是更硬的方向证据，回退 head=概念端重解（#041/#049/#070 恢复通道）。
+        concept = cons.filter_map { |c| c[0] == 'rank' && %w[new old expensive cheap first last].include?(c[3]) ? c[3] : nil }.first
+        if concept && concept != head
+          warn "    ↻ rank 概念端 #{concept} 仲裁 head #{head.inspect} → #{concept}（crash 兜底）"
+          head = concept
+          begin
+            solve_orders(objects, cons, head)
+          rescue StandardError => e2
+            stats[:crash] += 1
+            rows << { idx: i, verdict: 'FAIL', diag: "crash #{e2.message[0, 50]}" }
+            puts "  FAIL   #%03d [crash] %s" % [i, e2.message[0, 60]]
+            cash = true
+            break
+          end
+        else
+          stats[:crash] += 1
+          rows << { idx: i, verdict: 'FAIL', diag: "crash #{e.message[0, 50]}" }
+          puts "  FAIL   #%03d [crash] %s" % [i, e.message[0, 60]]
+          cash = true
+          break
+        end
       end
       break if orders.length == 1 || extra_runs >= 2
       warn "    ↻ 语义层第 #{extra_runs + 1} 次补抽（当前约束 #{cons.size} 条，解仍需唯一化）"
@@ -266,21 +291,8 @@ def main
       puts "  FAIL   #%03d [VOID]" % i
       next
     end
-    # rank 概念端是比语义层 head 更硬的方向证据：约束用了某概念端则 head 必须与该概念一致
-    if (concept = cons.filter_map { |c| c[0] == 'rank' && %w[new old expensive cheap first].include?(c[3]) ? c[3] : nil }.first)
-      if head.to_s != concept
-        warn "    ↻ rank 概念端 #{concept} 仲裁 head #{head.inspect} → #{concept}"
-        head = concept
-        orders = begin
-          solve_orders(objects, cons, head)
-        rescue StandardError => e
-          stats[:crash] += 1
-          rows << { idx: i, verdict: 'FAIL', diag: "crash #{e.message[0, 50]}" }
-          puts "  FAIL   #%03d [crash] %s" % [i, e.message[0, 60]]
-          next
-        end
-      end
-    end
+    # rank 概念端是比语义层 head 更硬的方向证据（head 为空/非法时才仲裁兜底）：
+    # 概念端侧词(如 old)未必等于序头方向——ele.g. head=new 时 oldest 在尾端是合法组合，
     if orders.empty?
       stats[:fail_contra] += 1
       rows << { idx: i, verdict: 'FAIL', diag: '约束矛盾（无误模型）', constraints: cons, head: head }
@@ -323,8 +335,9 @@ def main
             end
       machine = orders.first[pos - 1]
       pass = machine == target_obj
-      # 概念题唯一解但答案不符 → 语义层方向极可能翻转，补一次独立复查（不并集，方向翻转并集反而矛盾）
-      if !pass && !offline && extra_runs < 3 && %w[new old expensive cheap first].include?(head.to_s)
+      # 唯一解但答案不符 → 语义层方向极可能翻转，补一次独立复查（不并集，方向翻转并集反而矛盾）。
+      # 概念题与物理方位题（left/right）一样会翻，复查必须全 head 覆盖。
+      if !pass && !offline && extra_runs < 3
         recheck = run_semantic(BBH_OFFICIAL_PROMPT.gsub('{{OBJECTS}}', objects.inspect)
                                                    .gsub('{{TEXT}}', input + "\n\n⚠ 复查：上次的方向判反了，例如 'older than' 应编码为 before(更旧在前) 而非 after。请复查 before/after 与 head 的方向是否完全一致。"))
         if recheck && recheck['constraints'].is_a?(Array)

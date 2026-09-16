@@ -113,3 +113,8 @@ end
 # @doc grade: verified
 def lesson_022
 end
+# @doc note: 官方250例 249/250（agnes-2.5-flash）：语义层七戒——①对象/选项/位次=机器规格，LLM只抽关系句；②方向全题统一：more/…er→before，head须与before同向（#051/#085/#086/#092头方向反致整错）；③rightmost/leftmost译rank(X,1,right/left)绝对坐标不经head，不是rank3（#238译k=3错）；④概念端(新旧/贵贱)用rank概念谓词，禁物理left/right（#048/#059/#088）；⑤second-newest正则须排在newest前（子串劫持#048）；⑥方位词绝对化无需head=right特判（#029）；⑦方向翻转时重复改造必不可满足，须孤立约束重求解而非并集——机器负全责，LLM只报约束。
+# @doc tags: BBH,方向一致性,绝对坐标,概念谓词,独立复查,249,250
+# @doc grade: verified
+def lesson_023
+end
