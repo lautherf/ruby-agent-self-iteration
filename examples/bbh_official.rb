@@ -84,6 +84,15 @@ def rank_for(body, _head)
   return [1, :abs] if body[/leftmost/]
   return [1, :t_abs] if body[/rightmost/]
 
+  # finished 排位词是绝对序向，独立于 head。⚠ "Nth-to-last"（从尾端数第N）必须先于
+  # 纯 "Nth"（从头端数第N）检查——"finished third-to-last" 含子串 "finished third"，反序会误判头端。
+  if (m = body.match(/finished\s+(#{ORDINAL.keys.join('|')})-to-last/))
+    return [ORDINAL.fetch(m[1]), :t_abs]
+  end
+  if (m = body.match(/finished\s+(#{ORDINAL.keys.join('|')}|last|top|bottom|first)/))
+    return [ORDINAL.fetch(m[1], 1), m[1] == 'last' || m[1] == 'bottom' ? :t : :h]
+  end
+
   if (m = body.match(/the\s+(#{ORDINAL.keys.join('|')})\s+from the\s+(left|right)/))
     return [ORDINAL.fetch(m[1]), m[2] == 'left' ? :abs : :t_abs]
   end
@@ -110,12 +119,6 @@ def rank_for(body, _head)
     return [1, :h] if body[/cheapest/]
     return [2, :t] if body[/second-most|second most/]
     return [1, :t] if body[/most \w+/]
-  when 'first'
-    if (m = body.match(/finished\s+(#{ORDINAL.keys.join('|')}|last)/))
-      return [ORDINAL.fetch(m[1], 1), m[1] == 'last' ? :t : :h]
-    end
-    return [1, :h] if body[/finished (?:top|first)/]
-    return [1, :t] if body[/finished (?:bottom|last)/]
   end
   [nil, nil]
 end

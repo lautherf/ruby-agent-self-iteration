@@ -58,14 +58,25 @@ def letters_for(n)
 end
 
 # @doc role: 选项文字 → [第k, 方位]；head 声明概念序向（new/old/expensive/cheap/first）
-# @doc note: 物理方位（leftmost/rightmost/from the left/right）是绝对坐标 :abs/:t_abs 不依赖 head；
-#   概念词（newest/oldest/most expensive/…）依赖 head：head=头端词。⚠ 序数检查必须先于单数
-#   （"second-oldest" 含 "oldest" 子串，反序会误判 rank1）。定位不了返回 [nil, nil]。
+# @doc note: 物理方位（leftmost/rightmost/from the left/right/finished Nth(-to-last)）是绝对坐标
+#   :abs/:t_abs 不依赖 head；概念词（newest/oldest/most expensive/…）依赖 head：head=头端词。
+#   ⚠ 序数检查必须先于单数（"second-oldest" 含 "oldest" 子串，反序会误判 rank1）；
+#   "Nth-to-last" 也必须先于纯 "Nth"（"third-to-last" 含 "finished third" 子串）。定位不了返回 [nil, nil]。
 # @doc example: rank_for("a red book is the second from the left", "left") #=> [2, :abs]
 # @doc example: rank_for("a red book is the oldest", "old") #=> [1, :h]
+# @doc example: rank_for("Eli finished third-to-last", "first") #=> [3, :t_abs]（从尾端数第3）
 def rank_for(body, _head)
   return [1, :abs] if body[/leftmost/]
   return [1, :t_abs] if body[/rightmost/]
+
+  # finished 排位词是绝对序向，独立于 head。⚠ "Nth-to-last"（从尾端数第N）必须先于
+  # 纯 "Nth"（从头端数第N）检查——"finished third-to-last" 含子串 "finished third"，反序会误判头端。
+  if (m = body.match(/finished\s+(#{ORDINAL.keys.join('|')})-to-last/))
+    return [ORDINAL.fetch(m[1]), :t_abs]
+  end
+  if (m = body.match(/finished\s+(#{ORDINAL.keys.join('|')}|last|top|bottom|first)/))
+    return [ORDINAL.fetch(m[1], 1), m[1] == 'last' || m[1] == 'bottom' ? :t : :h]
+  end
 
   if (m = body.match(/the\s+(#{ORDINAL.keys.join('|')})\s+from the\s+(left|right)/))
     return [ORDINAL.fetch(m[1]), m[2] == 'left' ? :abs : :t_abs]
@@ -91,12 +102,6 @@ def rank_for(body, _head)
     return [1, :h] if body[/cheapest/]
     return [2, :t] if body[/second-most|second most/]
     return [1, :t] if body[/most \w+/]
-  when 'first'
-    if (m = body.match(/finished\s+(#{ORDINAL.keys.join('|')}|last)/))
-      return [ORDINAL.fetch(m[1], 1), m[1] == 'last' ? :t : :h]
-    end
-    return [1, :h] if body[/finished (?:top|first)/]
-    return [1, :t] if body[/finished (?:bottom|last)/]
   end
   [nil, nil]
 end
