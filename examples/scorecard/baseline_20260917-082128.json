@@ -1,0 +1,206 @@
+{
+  "data": "logical_deduction_five_objects.json",
+  "gradebook": "examples/gradebook/bbh_five_merged_20260916.json",
+  "rounds": 2,
+  "per_round": 3,
+  "train_total": 6,
+  "picked": [
+    17,
+    27,
+    33
+  ],
+  "holdout_idx": [
+    7,
+    20,
+    32,
+    34,
+    58
+  ],
+  "train_curve": [
+    [
+      1,
+      2,
+      3
+    ],
+    [
+      2,
+      0,
+      3
+    ]
+  ],
+  "holdout_curve": [
+    [
+      0,
+      4
+    ],
+    [
+      1,
+      5
+    ],
+    [
+      2,
+      4
+    ]
+  ],
+  "holdout_baseline": 4,
+  "holdout_final": 4,
+  "lessons_total": 27,
+  "lessons_added": [
+    "lesson_027"
+  ],
+  "tag": "baseline",
+  "timestamp": "2026-09-17T08:21:27Z",
+  "repeat": 2,
+  "runs": [
+    {
+      "data": "logical_deduction_five_objects.json",
+      "gradebook": "examples/gradebook/bbh_five_merged_20260916.json",
+      "rounds": 2,
+      "per_round": 3,
+      "train_total": 6,
+      "picked": [
+        17,
+        27,
+        33
+      ],
+      "holdout_idx": [
+        7,
+        20,
+        32,
+        34,
+        58
+      ],
+      "train_curve": [
+        [
+          1,
+          2,
+          3
+        ],
+        [
+          2,
+          0,
+          3
+        ]
+      ],
+      "holdout_curve": [
+        [
+          0,
+          4
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          2,
+          4
+        ]
+      ],
+      "holdout_baseline": 4,
+      "holdout_final": 4,
+      "lessons_total": 27,
+      "lessons_added": [
+        "lesson_027"
+      ]
+    },
+    {
+      "data": "logical_deduction_five_objects.json",
+      "gradebook": "examples/gradebook/bbh_five_merged_20260916.json",
+      "rounds": 2,
+      "per_round": 3,
+      "train_total": 6,
+      "picked": [
+        17,
+        27,
+        33
+      ],
+      "holdout_idx": [
+        7,
+        20,
+        32,
+        34,
+        58
+      ],
+      "train_curve": [
+        [
+          1,
+          2,
+          3
+        ],
+        [
+          2,
+          1,
+          3
+        ]
+      ],
+      "holdout_curve": [
+        [
+          0,
+          4
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          2,
+          3
+        ]
+      ],
+      "holdout_baseline": 4,
+      "holdout_final": 3,
+      "lessons_total": 26,
+      "lessons_added": [
+
+      ]
+    }
+  ],
+  "holdout_baseline_mean": 4.0,
+  "holdout_final_mean": 3.5,
+  "holdout_delta_mean": -0.5,
+  "holdout_baseline_range": [
+    4,
+    4
+  ],
+  "holdout_final_range": [
+    3,
+    4
+  ],
+  "holdout_curve_mean": [
+    [
+      0,
+      4.0,
+      4,
+      4
+    ],
+    [
+      1,
+      4.5,
+      4,
+      5
+    ],
+    [
+      2,
+      3.5,
+      3,
+      4
+    ]
+  ],
+  "train_curve_mean": [
+    [
+      1,
+      2.0
+    ],
+    [
+      2,
+      0.5
+    ]
+  ],
+  "spec": {
+    "green": true,
+    "runs": 251,
+    "failures": 0,
+    "errors": 0,
+    "summary": "251 runs, 1513 assertions, 0 failures, 0 errors, 1 skips"
+  }
+}

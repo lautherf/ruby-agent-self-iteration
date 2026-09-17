@@ -14,7 +14,10 @@
 #   AGNES_API_KEY=sk-... ruby -Ilib examples/bbh_grow.rb \
 #     /tmp/opencode/bbh/logical_deduction_five_objects.json \
 #     --gradebook examples/gradebook/bbh_five_merged_20260916.json \
-#     [--rounds 4] [--per-round 3] [--head-hint 1]
+#     [--rounds 4] [--per-round 3] [--holdout 5] [--lessons PATH] [--head-hint]
+#
+# 防数据泄漏：--holdout N 从 FAIL 集里确定性抽 N 题只作评测（不参与学习），
+#   其余为 train。每轮打印 train / holdout 双曲线，最后输出一行机读 SCORECARD JSON。
 
 require 'json'
 $LOAD_PATH.unshift File.expand_path('../lib', __dir__)
@@ -77,7 +80,7 @@ def task_for(example, objects, target_letter, target_obj, round_no, last_state, 
                  else
                    '（首轮，无上轮诊断）'
                  end
-  last_summary.gsub!(/\n+/, ' ')
+  last_summary = last_summary.gsub(/\n+/, ' ')
   hint = ''
   if head_hint
     hint = <<~HINT
@@ -114,11 +117,58 @@ def task_for(example, objects, target_letter, target_obj, round_no, last_state, 
   TASK
 end
 
+# 确定性切分：把 holdout_n 题沿排序后的 FAIL 列表均匀铺开（防前段/后段偏置）。
+def split_train_holdout(rows, holdout_n)
+  return [rows, []] if holdout_n <= 0 || holdout_n >= rows.size
+
+  picked = (0...holdout_n).map { |j| (j * rows.size / holdout_n.to_f).floor }.uniq
+  train = []
+  holdout = []
+  rows.each_with_index { |r, i| (picked.include?(i) ? holdout : train) << r }
+  [train, holdout]
+end
+
+# 题目解析：从 gradebook 行定位 json example 并抽出对象/目标选项/官答对象。
+def resolve_row(row, examples, machine)
+  example = examples[row['idx']]
+  input = example['input']
+  n = (mm = input.match(/set of (three|five|seven) objects/)) &&
+      { 'three' => 3, 'five' => 5, 'seven' => 7 }[mm[1]] || 3
+  objects = machine.objlist_from(input).first(n)
+  target_letter = example['target'][/\(([A-G])\)/, 1]
+  target_obj = begin
+    machine.parse_options(input, objects, 'left')[target_letter][:obj]
+  rescue StandardError
+    example['target'][/\([A-G]\)\s*(.*)/, 1].to_s.strip
+  end
+  [example, input, objects, target_letter, target_obj]
+end
+
+# 跑一题：knowledge 非 nil 时允许 learn（train）；nil 时只读注入（holdout 评测）。
+def solve_row(row, examples, machine, hub, llm, round_no, diag, head_hint, knowledge)
+  example, input, objects, target_letter, target_obj = resolve_row(row, examples, machine)
+  hub.get('knowledge')&.load!
+  # writable_plugins: [] —— 成长闭环只允许 learn 沉淀经验，禁止改写机层（防污染/防作弊）。
+  agent = RubyAgent::AgentLoop.new(hub: hub, llm: llm, max_steps: 8, knowledge: knowledge,
+                                   writable_plugins: [])
+  agent.on(:learn) { |e| puts "      ★ RA 沉淀 #{e[:id]}" }
+  agent.on(:tool_call) { |e| puts "      → #{e[:tool]}" }
+  answer = agent.run(task_for(example, objects, target_letter, target_obj, round_no, { diag: diag }, head_hint))
+  parsed = extract_json(answer.to_s)
+  if parsed && parsed['constraints'].is_a?(Array)
+    machine_verify(objects, parsed['constraints'], parsed['head'], input, target_letter, target_obj, machine)
+  else
+    { ok: false, kind: :crash, msg: 'JSON 解析失败' }
+  end
+end
+
 def main
   path = ARGV.find { |a| !a.start_with?('--') }
   gb = (i = ARGV.index('--gradebook')) ? ARGV[i + 1] : nil
   rounds = (j = ARGV.index('--rounds')) ? ARGV[j + 1].to_i : 4
   per_round = (k = ARGV.index('--per-round')) ? ARGV[k + 1].to_i : 3
+  holdout_n = (h = ARGV.index('--holdout')) ? ARGV[h + 1].to_i : 5
+  lessons_path = (l = ARGV.index('--lessons')) ? ARGV[l + 1] : LESSONS
   head_hint = ARGV.include?('--head-hint')
 
   abort "缺数据文件" if path.nil? || !File.exist?(path)
@@ -127,67 +177,65 @@ def main
   examples = data['examples']
 
   grade = JSON.parse(File.read(File.join(ROOT, gb)))
-  fail_rows = if grade
-    grade['rows'].select { |r| r['verdict'] == 'FAIL' }
-  else
-    []
-  end
-  fail_rows = fail_rows.sort_by { |r| r['idx'] }
+  fail_rows = grade['rows'].select { |r| r['verdict'] == 'FAIL' }.sort_by { |r| r['idx'] }
   abort "gradebook 无 FAIL 样本" if fail_rows.empty?
-  picked = fail_rows.first(per_round)
+
+  train, holdout = split_train_holdout(fail_rows, holdout_n)
+  picked = train.first(per_round)
 
   hub = RubyAgent::DocHub.new
   hub.mount(RubyAgent::DocPlugin.new('bbh', BBH_PLUGIN).load!)
-  knowledge = RubyAgent::Knowledge.new(LESSONS)
-  hub.mount(RubyAgent::DocPlugin.new('knowledge', LESSONS).load!)
+  knowledge = RubyAgent::Knowledge.new(lessons_path)
+  hub.mount(RubyAgent::DocPlugin.new('knowledge', lessons_path).load!)
+  lessons_before = knowledge.lessons.map { |l| l[:id] }
 
-  # 每轮样本循环（同一个 hub/knowledge 共享，learn 沉淀进知识，下轮 for_llm 带上）
-  puts "═══ RA 成长闭环：#{picked.size} 个错题 × #{rounds} 轮 ═══"
+  puts "═══ RA 成长闭环：train #{picked.size}/#{train.size} 题 × #{rounds} 轮 | " \
+       "holdout #{holdout.size} 题（不参与学习）═══"
+
+  # holdout 评测：只读注入 lessons（knowledge=nil 不注册 learn 工具）
+  eval_holdout = lambda do
+    hub.get('knowledge')&.load!
+    holdout.count do |row|
+      solve_row(row, examples, machine, hub, llm_adapter, 0, nil, head_hint, nil)[:ok]
+    end
+  end
+
+  holdout_curve = []
+  base = eval_holdout.call
+  holdout_curve << [0, base]
+  puts "── R0 holdout 基线: #{base}/#{holdout.size} PASS"
+
+  train_curve = []
   history = {}
   rounds.times do |r|
     round_no = r + 1
     ok_n = 0
-    picked.each_with_index do |row, i|
+    picked.each do |row|
       idx = row['idx']
-      example = examples[idx]
-      input = example['input']
-      n = (mm = input.match(/set of (three|five|seven) objects/)) &&
-          { 'three' => 3, 'five' => 5, 'seven' => 7 }[mm[1]] || 3
-      objects = machine.objlist_from(input).first(n)
-      target_letter = example['target'][/\(([A-G])\)/, 1]
-      target_obj = begin
-        m = machine
-        m.parse_options(input, objects, 'left')[target_letter][:obj]
-      rescue StandardError
-        example['target'][/\([A-G]\)\s*(.*)/, 1].to_s.strip
-      end
-
-      key = idx
-      prev = history[key] || {}
-      diag = prev[:diag]
-      # 每轮 reload：learn 写入的教训实时进 for_llm
-      hub.get('knowledge')&.load!
-      agent = RubyAgent::AgentLoop.new(
-        hub: hub, llm: llm_adapter, max_steps: 8,
-        knowledge: knowledge
-      )
-      agent.on(:learn) { |e| puts "      ★ RA 沉淀 #{e[:id]}" }
-      agent.on(:tool_call) { |e| puts "      → #{e[:tool]}" }
-      answer = agent.run(task_for(example, objects, target_letter, target_obj, round_no,
-                                  { diag: diag }, head_hint))
-      parsed = extract_json(answer.to_s)
-      outcome = if parsed && parsed['constraints'].is_a?(Array)
-        machine_verify(objects, parsed['constraints'], parsed['head'], input, target_letter, target_obj, machine)
-      else
-        { ok: false, kind: :crash, msg: 'JSON 解析失败' }
-      end
-      history[key] = { diag: "#{outcome[:kind]}#{outcome[:msg] ? "（#{outcome[:msg]}）" : ''}" }
+      prev = history[idx] || {}
+      outcome = solve_row(row, examples, machine, hub, llm_adapter, round_no, prev[:diag], head_hint, knowledge)
+      history[idx] = { diag: "#{outcome[:kind]}#{outcome[:msg] ? "（#{outcome[:msg]}）" : ''}" }
       ok_n += 1 if outcome[:ok]
       puts "  R#{round_no} #%03d #{outcome[:ok] ? '✓' : '✗'} #{outcome[:kind]} #{outcome[:msg].to_s[0, 40]}" % idx
     end
-    puts "── Round #{round_no}: #{ok_n}/#{picked.size} PASS（累计教训 #{knowledge.lessons.size} 条）"
+    train_curve << [round_no, ok_n, picked.size]
+    hok = eval_holdout.call
+    holdout_curve << [round_no, hok]
+    puts "── Round #{round_no}: train #{ok_n}/#{picked.size} | holdout #{hok}/#{holdout.size} | " \
+         "累计教训 #{knowledge.lessons.size} 条"
   end
-  puts "═══ 成长完毕：知识库教训 #{knowledge.lessons.size} 条 ═══"
+
+  added = knowledge.lessons.map { |l| l[:id] } - lessons_before
+  puts "═══ 成长完毕：知识库教训 #{knowledge.lessons.size} 条（本轮新增 #{added.size}）═══"
+  summary = {
+    data: File.basename(path), gradebook: gb, rounds: rounds, per_round: per_round,
+    train_total: train.size, picked: picked.map { |r| r['idx'] },
+    holdout_idx: holdout.map { |r| r['idx'] },
+    train_curve: train_curve, holdout_curve: holdout_curve,
+    holdout_baseline: base, holdout_final: holdout_curve.last[1],
+    lessons_total: knowledge.lessons.size, lessons_added: added
+  }
+  puts "SCORECARD #{JSON.generate(summary)}"
 end
 
 main if $PROGRAM_NAME == __FILE__
